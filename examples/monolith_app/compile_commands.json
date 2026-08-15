@@ -1,0 +1,20 @@
+[
+  {
+    "directory": ".",
+    "command": "g++ -I. -c src/render/render.cpp -o render.o",
+    "file": "src/render/render.cpp",
+    "output": "render.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -I. -c src/storage/index.cpp -o index.o",
+    "file": "src/storage/index.cpp",
+    "output": "index.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -I. -c src/network/client.cpp -o client.o",
+    "file": "src/network/client.cpp",
+    "output": "client.o"
+  }
+]

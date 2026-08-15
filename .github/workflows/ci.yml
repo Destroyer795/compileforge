@@ -1,0 +1,58 @@
+name: CompileForge CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.os }}, ${{ matrix.compiler }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            compiler: gcc-11
+            cxx: g++-11
+          - os: ubuntu-latest
+            compiler: clang-14
+            cxx: clang++-14
+          - os: windows-latest
+            compiler: msvc
+            cxx: cl
+          - os: macos-latest
+            compiler: apple-clang
+            cxx: clang++
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up C++ compiler (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.compiler }} cmake build-essential
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCOMPILEFORGE_BUILD_TESTS=ON -DCOMPILEFORGE_BUILD_BENCHMARKS=ON
+
+      - name: Build CompileForge
+        run: |
+          cmake --build build --config Release
+
+      - name: Run Unit & Integration Tests
+        run: |
+          ctest --test-dir build --output-on-failure
+
+      - name: Run Benchmarks
+        run: |
+          ./build/compileforge_benchmarks || build/Release/compileforge_benchmarks.exe
+
+      - name: Test Sample Analysis Command
+        run: |
+          ./build/compileforge analyze ./examples/monolith_app --format json --output test_report.json || build/Release/compileforge.exe analyze ./examples/monolith_app --format json --output test_report.json
