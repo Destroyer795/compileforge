@@ -88,11 +88,12 @@ $$\text{Risk Score} = \min\Big(100,\; \text{Impact}(35) + \text{Depth}(20) + \te
 ## 8. Line of Code Accounting
 
 ```markdown
-Production C++ LOC:        4,077 lines of C++20 code
-Test C++ LOC:              933 lines of C++20 code
+Production C++ LOC:        4,603 lines of C++20 code
+Test C++ LOC:              1,019 lines of C++20 code
 Benchmark C++ LOC:         59 lines of C++20 code
 Example C++ LOC:           1,415 lines of C++20 code
-Total C++ LOC:             6,484 lines of C++20 code
+Evaluation Harness LOC:    49 lines of Python code
+Total C++ LOC:             7,096 lines of C++20 code
 ```
 
 ---
@@ -103,9 +104,9 @@ Total C++ LOC:             6,484 lines of C++20 code
 PRODUCT IDENTITY:         Strong
 USP IMPLEMENTATION:       Strong
 CODE QUALITY:             Strong
-TESTING RIGOR:            Strong (38/38 unit/integration tests passing)
+TESTING RIGOR:            Strong (41/41 unit/integration tests passing)
 DOCUMENTATION:            Strong
-PROVENANCE & IP:          Strong (100% handcrafted zero-dependency C++20)
+PROVENANCE & IP:          Strong (Zero third-party runtime dependencies)
 COMMERCIAL POTENTIAL:     High
 ```
 

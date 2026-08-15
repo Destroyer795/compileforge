@@ -1,10 +1,10 @@
 # CompileForge Product Walkthrough & Demo Guide
 
-This guide demonstrates the full **DETECT → PREDICT → BUILD → VERIFY → LEARN** workflow using CompileForge's built-in demo scenario.
+This guide demonstrates the full **DETECT → PREDICT → BUILD → VERIFY → LEARN** workflow using CompileForge's included 3-TU demonstration fixture.
 
 ---
 
-### Step 1: Make a Code Change to a Shared Header
+### Step 1: Make a Code Change to a Shared Header (DETECT)
 
 In the demo project (`examples/impact_demo_app`), modify a core shared header:
 
@@ -16,7 +16,7 @@ git commit -am "feat(core): update Message struct in types.hpp"
 
 ---
 
-### Step 2: Predict Change Blast Radius & Build Risk
+### Step 2: Predict Change Blast Radius & Build Risk (PREDICT)
 
 Run CompileForge Change-Impact analysis before merging or rebuilding:
 
@@ -48,19 +48,21 @@ REVIEW HOTSPOTS (HIGH INSPECTION PRIORITY)
 
 ---
 
-### Step 3: Execute the Project Build
+### Step 3: Execute the Project Build (BUILD)
 
-Execute your standard incremental build tool (e.g. Ninja or CMake):
+Execute your standard build tool or compiler (e.g. GCC or Ninja):
 
 ```bash
-ninja -C build
+g++ -Iinclude -std=c++20 -c src/network/client.cpp -o src/network/client.o > build.log 2>&1
+g++ -Iinclude -std=c++20 -c src/storage/db.cpp -o src/storage/db.o >> build.log 2>&1
+g++ -Iinclude -std=c++20 -c src/render/engine.cpp -o src/render/engine.o >> build.log 2>&1
 ```
 
 ---
 
-### Step 4: Validate Predictions Against Observed Compiler Activity
+### Step 4: Validate Predictions Against Observed Activity (VERIFY)
 
-Compare what was predicted against what the build system actually compiled:
+Compare what was predicted against what the compiler actually rebuilt:
 
 ```bash
 compileforge validate prediction.json --log build.log
@@ -87,3 +89,5 @@ ACCURACY METRICS
   Overall Accuracy Rating:     EXCELLENT
 ==========================================================
 ```
+
+*(Note: The included demonstration scenario achieved 100% precision and recall on this 3-TU system.)*

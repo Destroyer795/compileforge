@@ -1,7 +1,7 @@
 # CompileForge Change-Impact Validation Case Study
 
 **Target Project**: `examples/impact_demo_app` (C++20 Multi-Module App)  
-**Evaluation Type**: Case Study — One Controlled System
+**Evaluation Scope**: Demonstration Scenario — One Controlled 3-TU System
 
 ---
 
@@ -18,7 +18,7 @@
 
 ## 2. Test Change
 
-A Git modification was introduced to the shared data contract in `include/core/types.hpp` (`feat(core): modify shared types header to trigger change-impact`).
+A Git modification was introduced to the shared data contract in `include/core/types.hpp`:
 
 ```diff
 --- a/include/core/types.hpp
@@ -54,6 +54,9 @@ The project translation units were compiled using GCC 11.4 (`g++ -std=c++20`), p
 
 ## 5. Prediction Accuracy & Metrics
 
+> [!NOTE]
+> The included demonstration scenario achieved **100% precision and recall**. This metric is specific to this 3-TU controlled fixture and is not a generalized accuracy claim for all C++ projects.
+
 ```
 ==========================================================
              CHANGE IMPACT PREDICTION VALIDATION          
@@ -80,11 +83,11 @@ ACCURACY METRICS
 ## 6. What CompileForge Got Wrong & Limitations
 
 1. **Compiler Caching Unawareness**: CompileForge predicts build surface based on pure static `#include` topology. If a project utilizes `ccache`, `sccache`, or incremental linking with unchanged AST hashes, the build system may skip recompilation of translation units that CompileForge flags as affected.
-2. **Conditional Header Inclusion Outside `#if 0`**: If `#include` directives are guarded by custom preprocessor macros that are disabled in the target build flags (e.g. `#ifdef ENABLE_EXPERIMENTAL_FEATURE`), CompileForge's lexical analyzer still identifies the dependency unless defined in `.compileforge.json`.
-3. **Historical Timing Absence**: In the absence of `-ftime-trace` logs, CompileForge cannot infer compilation durations and outputs `UNAVAILABLE` rather than estimating seconds.
+2. **Conditional Header Inclusion Outside `#if 0`**: If `#include` directives are guarded by custom preprocessor macros that are disabled in the target build flags (e.g. `#ifdef ENABLE_EXPERIMENTAL_FEATURE`), CompileForge's lexical analyzer still identifies the dependency unless configured in `.compileforge.json`.
+3. **Build-Cost Timing Availability**: CompileForge can validate build-cost estimates when historical or observed timing data is available. In the absence of `-ftime-trace` logs, CompileForge cannot infer compilation durations and outputs `UNAVAILABLE` rather than fabricating estimates.
 
 ---
 
 ## 7. Conclusion
 
-In this evaluation, CompileForge correctly identified all 3 affected translation units with 100.0% precision and recall, accurately forecasting a 100% rebuild surface before the build was executed.
+In this demonstration scenario, CompileForge correctly identified all 3 affected translation units with 100.0% precision and recall, accurately forecasting a 100% rebuild surface before the build was executed.

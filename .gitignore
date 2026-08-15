@@ -1,15 +1,28 @@
 # Build output directory
 /build/
+/build_clean/
 /bin/
 /obj/
 /out/
 /cmake-build-*/
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
 
-# Reports and temporary cache
-/report.html
-/report.json
-/test_report.json
-/.compileforge.cache
+# Reports, logs and temporary artifacts
+*.log
+*.html
+*report*.json
+*prediction*.json
+*validation*.json
+pred.json
+.compileforge.cache
+evaluations/work/
+evaluations/*_report.json
 
 # IDE and OS
 .vs/

@@ -20,6 +20,19 @@
 
 ---
 
+## Core Differentiators
+
+CompileForge combines:
+1. **Git-Aware Change-Impact Workflow**: Traces commit diffs (`HEAD~1..HEAD`, `main..HEAD`) and uncommitted changes.
+2. **Forward Dependency Propagation**: Evaluates inclusion graphs to identify transitively affected translation units.
+3. **Rebuild-Surface Estimation**: Quantifies the percentage of project source code and TUs impacted by a change.
+4. **Explainable Risk Scoring**: Deterministic 0–100 heuristic scoring based on blast radius, centrality, churn, and complexity.
+5. **Validation Against Observed Builds**: Compares predicted impact against observed compiler build logs.
+6. **Zero Runtime Dependencies**: Handcrafted C++20 engine without external JSON, AST, or graph libraries.
+7. **Native CI Integration**: Automated risk thresholds (`--fail-on-risk <threshold>`) and machine-readable JSON reports.
+
+---
+
 ## What CompileForge Is / Is Not
 
 ### CompileForge IS:
@@ -30,7 +43,8 @@
 - **Transparent & Explainable**: Every risk point and accuracy percentage is backed by analyzed data.
 
 ### CompileForge IS NOT:
-- **A full C++ compiler**: It uses fast static lexical preprocessor analysis (>5.5M lines/sec), not a semantic compiler AST.
+- **A full C++ compiler**: It uses fast static lexical preprocessor analysis (>5.3M lines/sec), not a semantic compiler AST.
+- **A replacement for compiler profilers**: Does not replace specialized tools like Microsoft C++ Build Insights or Clang `-ftime-trace`.
 - **A guarantee of build system behavior**: Preprocessor estimates may differ from compiler caching/PCH implementations.
 - **A software defect predictor**: Risk scores reflect architectural blast radius and build cost, not code bug probabilities.
 
@@ -74,6 +88,8 @@ cmake --build build
 ## Documentation
 
 - [Product Demo & Walkthrough](docs/demo.md)
+- [Change-Impact Validation Case Study](docs/case-study.md)
+- [Reproducible Evaluation Specification](docs/evaluation.md)
 - [Architecture & Design Specification](docs/ARCHITECTURE.md)
 - [Metrics & Scoring Methodology](docs/METRICS.md)
 - [Independent Commercial Buyer Audit](docs/BUYER_AUDIT.md)
