@@ -113,8 +113,10 @@ ImpactValidationResult ImpactValidator::validate(
     size_t total_predicted = val.true_positives + val.false_positives;
     if (total_predicted > 0) {
         val.precision = (static_cast<double>(val.true_positives) / static_cast<double>(total_predicted)) * 100.0;
+        val.precision_available = true;
     } else {
-        val.precision = 100.0;
+        val.precision = 0.0;
+        val.precision_available = false;
     }
 
     size_t total_observed = val.true_positives + val.false_negatives;
@@ -122,7 +124,7 @@ ImpactValidationResult ImpactValidator::validate(
         val.recall = (static_cast<double>(val.true_positives) / static_cast<double>(total_observed)) * 100.0;
         val.recall_available = true;
     } else {
-        val.recall = 100.0;
+        val.recall = 0.0;
         val.recall_available = false;
     }
 

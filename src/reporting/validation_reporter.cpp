@@ -18,7 +18,12 @@ void ValidationReporter::print_terminal(const ImpactValidationResult& res) {
     std::cout << "  False Negatives (Missed):    " << res.false_negatives << "\n\n";
 
     std::cout << "ACCURACY METRICS\n";
-    std::cout << "  Prediction Precision:        " << std::fixed << std::setprecision(1) << res.precision << "%\n";
+    if (res.precision_available) {
+        std::cout << "  Prediction Precision:        " << std::fixed << std::setprecision(1) << res.precision << "%\n";
+    } else {
+        std::cout << "  Prediction Precision:        UNAVAILABLE (No predicted TUs)\n";
+    }
+
     if (res.recall_available) {
         std::cout << "  Prediction Recall:           " << std::fixed << std::setprecision(1) << res.recall << "%\n";
     } else {
@@ -58,6 +63,7 @@ JsonValue ValidationReporter::to_json(const ImpactValidationResult& res) {
     acc_obj["false_positives"] = static_cast<int>(res.false_positives);
     acc_obj["false_negatives"] = static_cast<int>(res.false_negatives);
     acc_obj["precision"] = res.precision;
+    acc_obj["precision_available"] = res.precision_available;
     acc_obj["recall"] = res.recall;
     acc_obj["recall_available"] = res.recall_available;
     acc_obj["rebuild_surface_error_pct"] = res.rebuild_surface_error_pct;

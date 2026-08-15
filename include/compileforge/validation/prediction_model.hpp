@@ -63,6 +63,7 @@ struct ImpactValidationResult {
     size_t false_negatives{0}; // Rebuilt but not predicted
 
     double precision{0.0};     // TP / (TP + FP)
+    bool precision_available{false};
     double recall{0.0};        // TP / (TP + FN)
     bool recall_available{false};
 

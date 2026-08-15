@@ -4,7 +4,7 @@
 #include <sstream>
 #include <chrono>
 #include <filesystem>
-#include <regex>
+#include <algorithm>
 
 namespace compileforge {
 
@@ -31,6 +31,21 @@ std::vector<std::string> BuildObserver::extract_compiled_sources_from_log(const 
             }
         }
 
+        // GCC cc1plus or clang invocation: cc1plus ... src/foo.cpp
+        size_t cc1_pos = trimmed.find("cc1plus ");
+        if (cc1_pos != std::string::npos) {
+            auto tokens = utils::split(trimmed, ' ');
+            for (const auto& token : tokens) {
+                std::string t = utils::trim(token);
+                if (utils::ends_with(t, ".cpp") || utils::ends_with(t, ".cc") || utils::ends_with(t, ".cxx")) {
+                    if (t.find("/tmp/") == std::string::npos) {
+                        sources.push_back(utils::normalize_path(t));
+                    }
+                }
+            }
+            continue;
+        }
+
         // Direct compiler command pattern: g++ ... -c src/foo.cpp -o ...
         size_t c_flag = trimmed.find(" -c ");
         if (c_flag != std::string::npos) {
@@ -41,6 +56,21 @@ std::vector<std::string> BuildObserver::extract_compiled_sources_from_log(const 
                     if (!src.empty() && src[0] != '-') {
                         sources.push_back(utils::normalize_path(src));
                     }
+                }
+            }
+            continue;
+        }
+
+        // Match standalone tokens ending in .cpp / .cc / .cxx
+        auto tokens = utils::split(trimmed, ' ');
+        for (const auto& tok : tokens) {
+            std::string t = utils::trim(tok);
+            if (!t.empty() && (t.front() == '\'' || t.front() == '"')) t = t.substr(1);
+            if (!t.empty() && (t.back() == '\'' || t.back() == '"')) t.pop_back();
+
+            if (utils::ends_with(t, ".cpp") || utils::ends_with(t, ".cc") || utils::ends_with(t, ".cxx")) {
+                if (t.find("/tmp/") == std::string::npos && t.find("/usr/") == std::string::npos && t.find("CMakeFiles") == std::string::npos) {
+                    sources.push_back(utils::normalize_path(t));
                 }
             }
         }
