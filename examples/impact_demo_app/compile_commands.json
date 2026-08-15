@@ -1,0 +1,20 @@
+[
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -std=c++20 -O2 -c src/network/client.cpp -o src/network/client.o",
+    "file": "src/network/client.cpp",
+    "output": "src/network/client.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -std=c++20 -O2 -c src/storage/db.cpp -o src/storage/db.o",
+    "file": "src/storage/db.cpp",
+    "output": "src/storage/db.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -std=c++20 -O2 -c src/render/engine.cpp -o src/render/engine.o",
+    "file": "src/render/engine.cpp",
+    "output": "src/render/engine.o"
+  }
+]
