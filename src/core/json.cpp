@@ -225,6 +225,11 @@ private:
             char c = input_[pos_];
             if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
                 ++pos_;
+            } else if (c == '/' && pos_ + 1 < input_.size() && input_[pos_ + 1] == '/') {
+                pos_ += 2;
+                while (pos_ < input_.size() && input_[pos_] != '\n' && input_[pos_] != '\r') {
+                    ++pos_;
+                }
             } else {
                 break;
             }

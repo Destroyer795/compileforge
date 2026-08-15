@@ -8,11 +8,17 @@
 #include <array>
 
 #if defined(_WIN32) || defined(_WIN64)
+#include <io.h>
 #define POPEN _popen
 #define PCLOSE _pclose
+#define ISATTY _isatty
+#define FILENO _fileno
 #else
+#include <unistd.h>
 #define POPEN popen
 #define PCLOSE pclose
+#define ISATTY isatty
+#define FILENO fileno
 #endif
 
 namespace compileforge::utils {
@@ -58,18 +64,49 @@ bool ends_with(std::string_view str, std::string_view suffix) {
     return str.size() >= suffix.size() && str.substr(str.size() - suffix.size()) == suffix;
 }
 
+bool glob_match(std::string_view pattern, std::string_view text) {
+    size_t p = 0, t = 0;
+    size_t star_p = std::string_view::npos, star_t = std::string_view::npos;
+
+    while (t < text.size()) {
+        if (p < pattern.size() && (pattern[p] == '?' || pattern[p] == text[t])) {
+            ++p;
+            ++t;
+        } else if (p < pattern.size() && pattern[p] == '*') {
+            star_p = p++;
+            star_t = t;
+        } else if (star_p != std::string_view::npos) {
+            p = star_p + 1;
+            t = ++star_t;
+        } else {
+            return false;
+        }
+    }
+
+    while (p < pattern.size() && pattern[p] == '*') {
+        ++p;
+    }
+
+    return p == pattern.size();
+}
+
 std::string normalize_path(const std::string& path) {
     if (path.empty()) return "";
+    std::string res;
     try {
         std::filesystem::path p(path);
-        std::filesystem::path canonical_p = std::filesystem::weakly_canonical(p);
-        std::string res = canonical_p.generic_string();
-        return res;
+        std::filesystem::path normal_p = p.lexically_normal();
+        res = normal_p.generic_string();
     } catch (...) {
-        std::string res = path;
+        res = path;
         std::replace(res.begin(), res.end(), '\\', '/');
-        return res;
     }
+
+    // Windows drive letter normalization (e.g. c:/ -> C:/)
+    if (res.size() >= 2 && res[1] == ':') {
+        res[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(res[0])));
+    }
+    return res;
 }
 
 std::string to_relative_path(const std::string& full_path, const std::string& root_path) {
@@ -86,9 +123,22 @@ std::string to_relative_path(const std::string& full_path, const std::string& ro
     }
 }
 
+bool path_equals(const std::string& path1, const std::string& path2) {
+    std::string n1 = normalize_path(path1);
+    std::string n2 = normalize_path(path2);
+    if ((n1.size() >= 2 && n1[1] == ':') || (n2.size() >= 2 && n2[1] == ':')) {
+        return to_lower(n1) == to_lower(n2);
+    }
+#if defined(_WIN32) || defined(_WIN64)
+    return to_lower(n1) == to_lower(n2);
+#else
+    return n1 == n2;
+#endif
+}
+
 bool is_header_file(const std::string& path) {
     std::string ext = to_lower(std::filesystem::path(path).extension().string());
-    return ext == ".h" || ext == ".hpp" || ext == ".hh" || ext == ".hxx" || ext == ".h++" || ext == ".inl";
+    return ext == ".h" || ext == ".hpp" || ext == ".hh" || ext == ".hxx" || ext == ".h++" || ext == ".inl" || ext == ".ipp" || ext == ".tpp";
 }
 
 bool is_source_file(const std::string& path) {
@@ -106,7 +156,6 @@ std::string calculate_file_hash(const std::string& filepath) {
     std::ifstream file(filepath, std::ios::binary);
     if (!file) return "0000000000000000";
 
-    // FNV-1a 64-bit hash
     uint64_t hash = 14695981039346656037ULL;
     constexpr uint64_t fnv_prime = 1099511628211ULL;
 
@@ -126,7 +175,7 @@ std::string calculate_file_hash(const std::string& filepath) {
 
 std::string execute_command(const std::string& command, int* exit_code) {
     std::string output;
-    std::array<char, 256> buffer;
+    std::array<char, 4096> buffer;
     FILE* pipe = POPEN(command.c_str(), "r");
     if (!pipe) {
         if (exit_code) *exit_code = -1;
@@ -138,6 +187,10 @@ std::string execute_command(const std::string& command, int* exit_code) {
     int code = PCLOSE(pipe);
     if (exit_code) *exit_code = code;
     return output;
+}
+
+bool is_atty() {
+    return ISATTY(FILENO(stdout)) != 0;
 }
 
 } // namespace compileforge::utils

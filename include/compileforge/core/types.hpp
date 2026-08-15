@@ -27,6 +27,8 @@ struct IncludeDirective {
     IncludeKind kind{IncludeKind::User};
     size_t line_number{0};
     bool is_resolved{false};
+    bool is_self_include{false};
+    bool is_duplicate{false};
 };
 
 struct SourceMetricsData {
@@ -72,6 +74,7 @@ struct HotspotScore {
     double fan_in_factor{0.0};
     double complexity_factor{0.0};
     double churn_factor{0.0};
+    std::string score_breakdown;
 };
 
 enum class Severity {
