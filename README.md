@@ -12,7 +12,7 @@
 $$\text{Git Changes} \longrightarrow \text{Dependency Graph} \longrightarrow \text{Rebuild Surface} \longrightarrow \text{Risk Score} \longrightarrow \text{Build Observation} \longrightarrow \text{Prediction Validation}$$
 
 > [!NOTE]
-> CompileForge evaluates dependency blast radius via **fast static lexical preprocessor analysis** (>5.3M lines/sec). Predictions represent the potential static rebuild surface rather than a guarantee of compiler caching or AST-level compilation skipping.
+> CompileForge evaluates dependency blast radius via **fast static lexical preprocessor analysis** (>5.7M lines/sec). Predictions represent the potential static rebuild surface rather than a guarantee of compiler caching or AST-level compilation skipping.
 
 ---
 
@@ -107,10 +107,11 @@ ninja -v > build.log 2>&1
 
 ## Performance & Testing
 
-- **JSON Parser Throughput**: 187.15 MB/s
-- **Preprocessor Lexer Speed**: 5,385,355 lines/sec
-- **260-File Project Scan & Graph**: 1.46 seconds
-- **Test Suite**: 41/41 automated tests passing (**100% pass rate in ~215 ms**).
+- **JSON Parser Throughput**: 207.40 MB/s
+- **Preprocessor Lexer Speed**: 5,745,031 lines/sec
+- **260-File Project Scan & Graph**: 22.98 ms
+- **Test Suite**: 41/41 automated tests passing (**100% pass rate**).
+- **Prediction Accuracy**: 100% precision and recall on the included demonstration scenario; general accuracy across arbitrary external codebases has not yet been established.
 
 ---
 
