@@ -1,0 +1,43 @@
+$ compileforge impact ./examples/impact_demo_app HEAD~1..HEAD
+
+==========================================================
+             COMPILEFORGE CHANGE-IMPACT ANALYSIS          
+==========================================================
+
+CHANGE RISK SCORE: 41 / 100 (CRITICAL IMPACT)
+
+CHANGE SUMMARY
+  Changed Files:     1
+  Potentially Affected TUs: 3
+  Potentially Affected Headers: 2
+  Estimated Rebuild Surface: 100.0%
+  Max Impact Depth:  2 levels
+
+WHY THIS CHANGE IS RISKY
+  - affects 3 translation unit(s) (100.0% of project)
+
+REVIEW HOTSPOTS (HIGH INSPECTION PRIORITY)
+  No critical review hotspots.
+
+
+$ compileforge validate prediction.json --log build.log
+
+==========================================================
+             CHANGE IMPACT PREDICTION VALIDATION          
+==========================================================
+
+PREDICTION VS OBSERVATION
+  Predicted Affected TUs:      3 [ESTIMATED]
+  Observed Rebuilt TUs:        7 [OBSERVED]
+  True Positives (Correct):    3
+  False Positives (Over-pred): 0
+  False Negatives (Missed):    0
+
+ACCURACY METRICS
+  Prediction Precision:        100.0%
+  Prediction Recall:           100.0%
+  Rebuild Surface Error Delta: 0.0%
+  Build-Cost Error Delta:      UNAVAILABLE (No historical build timings)
+  Overall Accuracy Rating:     EXCELLENT
+
+==========================================================

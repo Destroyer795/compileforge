@@ -31,6 +31,22 @@ CompileForge answers these questions natively without external runtime dependenc
 
 ---
 
+## See It in Action
+
+The closed-loop **DETECT → PREDICT → BUILD → VERIFY** workflow generates standalone technical editorial reports:
+
+### 1. Change-Impact Report
+Evaluates Git revision diffs to forecast affected translation units, calculate rebuild surface percentage, and rank review hotspots before rebuilding.
+
+![CompileForge Change-Impact Report](docs/assets/impact-report.png)
+
+### 2. Prediction Validation Report
+Compares predicted impact against observed compiler build logs to verify prediction precision and surface error deltas.
+
+![CompileForge Prediction Validation Report](docs/assets/validation-report.png)
+
+---
+
 ## Core Workflow
 
 CompileForge implements a closed-loop **DETECT → PREDICT → BUILD → VERIFY → LEARN** workflow:
