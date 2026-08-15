@@ -83,11 +83,11 @@ compileforge validate prediction.json --log build.log --format html --output val
 
 ## 4. Helper Commands
 
-### `compileforge diff [git_range]`
-Displays the list of modified, added, renamed, or deleted files parsed from Git.
+### `compileforge diff <baseline.json> <target.json>`
+Compares two project analysis JSON reports and displays metric deltas (files, edges, health score, cycles).
 
-### `compileforge diff-impact [git_range]`
-Convenience shortcut for running change impact on the current workspace.
+### `compileforge diff-impact <baseline_impact.json> <current_impact.json>`
+Compares two impact analysis JSON reports and displays risk and rebuild surface deltas.
 
 ### `compileforge init`
 Generates a default `.compileforge.json` configuration file in the current directory.
