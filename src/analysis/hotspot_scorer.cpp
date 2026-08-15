@@ -1,5 +1,7 @@
 #include <compileforge/analysis/hotspot_scorer.hpp>
 #include <algorithm>
+#include <sstream>
+#include <iomanip>
 
 namespace compileforge {
 
@@ -33,6 +35,12 @@ void HotspotScorer::compute_hotspots(DependencyGraph& graph) {
         node->hotspot.complexity_factor = complexity_f;
         node->hotspot.churn_factor = churn_f;
         node->hotspot.total_score = std::min(100.0, build_f + fan_in_f + complexity_f + churn_f);
+
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(1);
+        ss << "BUILD: " << build_f << "/35, DEPENDENCY: " << fan_in_f << "/30, COMPLEXITY: "
+           << complexity_f << "/20, CHURN: " << churn_f << "/15";
+        node->hotspot.score_breakdown = ss.str();
     }
 }
 
@@ -44,7 +52,10 @@ std::vector<FileNode> HotspotScorer::get_top_hotspots(const DependencyGraph& gra
     }
 
     std::sort(nodes.begin(), nodes.end(), [](const FileNode& a, const FileNode& b) {
-        return a.hotspot.total_score > b.hotspot.total_score;
+        if (a.hotspot.total_score != b.hotspot.total_score) {
+            return a.hotspot.total_score > b.hotspot.total_score;
+        }
+        return a.relative_path < b.relative_path; // Deterministic tie-breaking
     });
 
     if (nodes.size() > limit) {
