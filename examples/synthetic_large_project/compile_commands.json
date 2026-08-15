@@ -1,0 +1,182 @@
+[
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu0.cpp -o src/tu0.cpp.o",
+    "file": "src/tu0.cpp",
+    "output": "src/tu0.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu1.cpp -o src/tu1.cpp.o",
+    "file": "src/tu1.cpp",
+    "output": "src/tu1.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu2.cpp -o src/tu2.cpp.o",
+    "file": "src/tu2.cpp",
+    "output": "src/tu2.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu3.cpp -o src/tu3.cpp.o",
+    "file": "src/tu3.cpp",
+    "output": "src/tu3.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu4.cpp -o src/tu4.cpp.o",
+    "file": "src/tu4.cpp",
+    "output": "src/tu4.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu5.cpp -o src/tu5.cpp.o",
+    "file": "src/tu5.cpp",
+    "output": "src/tu5.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu6.cpp -o src/tu6.cpp.o",
+    "file": "src/tu6.cpp",
+    "output": "src/tu6.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu7.cpp -o src/tu7.cpp.o",
+    "file": "src/tu7.cpp",
+    "output": "src/tu7.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu8.cpp -o src/tu8.cpp.o",
+    "file": "src/tu8.cpp",
+    "output": "src/tu8.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu9.cpp -o src/tu9.cpp.o",
+    "file": "src/tu9.cpp",
+    "output": "src/tu9.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu10.cpp -o src/tu10.cpp.o",
+    "file": "src/tu10.cpp",
+    "output": "src/tu10.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu11.cpp -o src/tu11.cpp.o",
+    "file": "src/tu11.cpp",
+    "output": "src/tu11.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu12.cpp -o src/tu12.cpp.o",
+    "file": "src/tu12.cpp",
+    "output": "src/tu12.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu13.cpp -o src/tu13.cpp.o",
+    "file": "src/tu13.cpp",
+    "output": "src/tu13.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu14.cpp -o src/tu14.cpp.o",
+    "file": "src/tu14.cpp",
+    "output": "src/tu14.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu15.cpp -o src/tu15.cpp.o",
+    "file": "src/tu15.cpp",
+    "output": "src/tu15.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu16.cpp -o src/tu16.cpp.o",
+    "file": "src/tu16.cpp",
+    "output": "src/tu16.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu17.cpp -o src/tu17.cpp.o",
+    "file": "src/tu17.cpp",
+    "output": "src/tu17.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu18.cpp -o src/tu18.cpp.o",
+    "file": "src/tu18.cpp",
+    "output": "src/tu18.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu19.cpp -o src/tu19.cpp.o",
+    "file": "src/tu19.cpp",
+    "output": "src/tu19.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu20.cpp -o src/tu20.cpp.o",
+    "file": "src/tu20.cpp",
+    "output": "src/tu20.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu21.cpp -o src/tu21.cpp.o",
+    "file": "src/tu21.cpp",
+    "output": "src/tu21.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu22.cpp -o src/tu22.cpp.o",
+    "file": "src/tu22.cpp",
+    "output": "src/tu22.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu23.cpp -o src/tu23.cpp.o",
+    "file": "src/tu23.cpp",
+    "output": "src/tu23.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu24.cpp -o src/tu24.cpp.o",
+    "file": "src/tu24.cpp",
+    "output": "src/tu24.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu25.cpp -o src/tu25.cpp.o",
+    "file": "src/tu25.cpp",
+    "output": "src/tu25.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu26.cpp -o src/tu26.cpp.o",
+    "file": "src/tu26.cpp",
+    "output": "src/tu26.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu27.cpp -o src/tu27.cpp.o",
+    "file": "src/tu27.cpp",
+    "output": "src/tu27.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu28.cpp -o src/tu28.cpp.o",
+    "file": "src/tu28.cpp",
+    "output": "src/tu28.cpp.o"
+  },
+  {
+    "directory": ".",
+    "command": "g++ -Iinclude -c src/tu29.cpp -o src/tu29.cpp.o",
+    "file": "src/tu29.cpp",
+    "output": "src/tu29.cpp.o"
+  }
+]

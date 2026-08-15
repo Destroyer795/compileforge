@@ -102,6 +102,8 @@ if(COMPILEFORGE_BUILD_TESTS)
         tests/unit/test_hotspot.cpp
         tests/unit/test_recommendations.cpp
         tests/unit/test_regression.cpp
+        tests/unit/test_properties.cpp
+        tests/unit/test_malformed_inputs.cpp
         tests/integration/test_end_to_end.cpp
     )
     target_link_libraries(compileforge_tests PRIVATE compileforge_lib)
