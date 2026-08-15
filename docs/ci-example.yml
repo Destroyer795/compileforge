@@ -1,0 +1,32 @@
+name: CompileForge Build Intelligence CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Build Prerequisites
+      run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++
+
+    - name: Configure and Build Project
+      run: |
+        cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        cmake --build build
+
+    - name: Run CompileForge Analysis
+      run: |
+        ./build/compileforge analyze . --fail-on-cycle --fail-on-hotspot --format json --output current_report.json
+
+    - name: Upload Report Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: compileforge-report
+        path: current_report.json

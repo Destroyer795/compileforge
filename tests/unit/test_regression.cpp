@@ -4,30 +4,21 @@
 using namespace compileforge;
 
 TEST_CASE(test_regression_detector_comparison) {
-    std::string base_str = R"({
-        "summary": { "circular_dependencies": 0 },
-        "files": [
-            { "path": "src/render.cpp", "hotspot_score": 20.0 }
-        ]
+    std::string baseline_json = R"({
+        "summary": { "circular_dependencies": 0, "sloc": 100 }
     })";
 
-    std::string curr_str = R"({
-        "summary": { "circular_dependencies": 2 },
-        "files": [
-            { "path": "src/render.cpp", "hotspot_score": 35.0 }
-        ]
+    std::string current_json = R"({
+        "summary": { "circular_dependencies": 1, "sloc": 120 }
     })";
 
-    auto b_json = JsonValue::parse(base_str);
-    auto c_json = JsonValue::parse(curr_str);
+    auto b_json = JsonValue::parse(baseline_json);
+    auto c_json = JsonValue::parse(current_json);
 
-    ASSERT_TRUE(b_json.has_value());
-    ASSERT_TRUE(c_json.has_value());
+    ASSERT_TRUE(b_json.is_ok());
+    ASSERT_TRUE(c_json.is_ok());
 
-    auto reg_res = RegressionDetector::compare(b_json.value(), c_json.value());
-    ASSERT_TRUE(reg_res.has_value());
-
-    const auto& report = reg_res.value();
-    ASSERT_TRUE(report.has_regressions);
-    ASSERT_EQ(report.deltas.size(), 2);
+    auto reg_res = RegressionDetector::compare_reports(b_json.value(), c_json.value());
+    ASSERT_TRUE(reg_res.is_regression);
+    ASSERT_EQ(reg_res.new_cycle_count, 1);
 }

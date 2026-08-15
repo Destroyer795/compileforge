@@ -2,95 +2,70 @@
 #include <chrono>
 #include <vector>
 #include <string>
-#include <iomanip>
-
 #include <compileforge/core/json.hpp>
 #include <compileforge/parser/include_parser.hpp>
 #include <compileforge/graph/dependency_graph.hpp>
 #include <compileforge/graph/cycle_detector.hpp>
+#include <compileforge/project/scanner.hpp>
 
 using namespace compileforge;
-
-static void benchmark_json_parsing() {
-    std::string large_json = R"([)";
-    for (int i = 0; i < 5000; ++i) {
-        large_json += R"({"directory":"/build","command":"g++ -Iinclude -c src/file.cpp","file":"src/file.cpp","output":"file.o"})";
-        if (i + 1 < 5000) large_json += ",";
-    }
-    large_json += "]";
-
-    auto start = std::chrono::high_resolution_clock::now();
-    size_t iterations = 20;
-    for (size_t i = 0; i < iterations; ++i) {
-        auto res = JsonValue::parse(large_json);
-        (void)res;
-    }
-    auto end = std::chrono::high_resolution_clock::now();
-
-    double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
-    double total_bytes = static_cast<double>(large_json.size() * iterations);
-    double mb_per_sec = (total_bytes / (1024.0 * 1024.0)) / (elapsed_ms / 1000.0);
-
-    std::cout << "[ BENCHMARK ] JSON Parser Throughput:  " << std::fixed << std::setprecision(2)
-              << mb_per_sec << " MB/s (" << elapsed_ms << " ms total for " << iterations << " iterations)\n";
-}
-
-static void benchmark_include_parser() {
-    std::string mock_code;
-    for (int i = 0; i < 1000; ++i) {
-        mock_code += "#include \"header_" + std::to_string(i % 50) + ".hpp\"\n";
-        mock_code += "int fn_" + std::to_string(i) + "() { if (true) return " + std::to_string(i) + "; }\n";
-    }
-
-    auto start = std::chrono::high_resolution_clock::now();
-    size_t iterations = 50;
-    size_t total_lines = 2000 * iterations;
-    for (size_t i = 0; i < iterations; ++i) {
-        auto res = IncludeParser::parse_content(mock_code, "test.cpp");
-        (void)res;
-    }
-    auto end = std::chrono::high_resolution_clock::now();
-
-    double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
-    double lines_per_sec = (static_cast<double>(total_lines) / (elapsed_ms / 1000.0));
-
-    std::cout << "[ BENCHMARK ] Include Parser Speed:    " << std::fixed << std::setprecision(0)
-              << lines_per_sec << " lines/sec (" << elapsed_ms << " ms total)\n";
-}
-
-static void benchmark_cycle_detection() {
-    DependencyGraph graph;
-    constexpr int N = 100;
-    for (int i = 0; i < N; ++i) {
-        FileNode node;
-        node.relative_path = "header_" + std::to_string(i) + ".hpp";
-        node.kind = FileKind::Header;
-        graph.add_node(node);
-    }
-    for (int i = 0; i < N; ++i) {
-        graph.add_edge("header_" + std::to_string(i) + ".hpp", "header_" + std::to_string((i + 1) % N) + ".hpp");
-    }
-
-    auto start = std::chrono::high_resolution_clock::now();
-    size_t iterations = 100;
-    for (size_t i = 0; i < iterations; ++i) {
-        auto cycles = CycleDetector::detect_cycles(graph);
-        (void)cycles;
-    }
-    auto end = std::chrono::high_resolution_clock::now();
-
-    double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
-    std::cout << "[ BENCHMARK ] Cycle Detector Speed:    " << std::fixed << std::setprecision(3)
-              << (elapsed_ms / static_cast<double>(iterations)) << " ms/run (100-node graph)\n";
-}
 
 int main() {
     std::cout << "========================================================\n";
     std::cout << "               COMPILEFORGE BENCHMARKS                  \n";
     std::cout << "========================================================\n";
-    benchmark_json_parsing();
-    benchmark_include_parser();
-    benchmark_cycle_detection();
+
+    // Benchmark 1: JSON Parsing Speed
+    std::string sample_json = R"([)";
+    for (int i = 0; i < 1000; ++i) {
+        sample_json += R"({"directory": "/build", "command": "g++ -Iinclude -O2 -c src/main.cpp -o main.o", "file": "src/main.cpp"},)";
+    }
+    sample_json.back() = ']';
+
+    auto start_json = std::chrono::high_resolution_clock::now();
+    constexpr int iterations = 20;
+    for (int i = 0; i < iterations; ++i) {
+        auto res = JsonValue::parse(sample_json);
+        (void)res;
+    }
+    auto end_json = std::chrono::high_resolution_clock::now();
+    double json_time_ms = std::chrono::duration<double, std::milli>(end_json - start_json).count();
+    double json_mb = (static_cast<double>(sample_json.size() * iterations) / (1024.0 * 1024.0));
+    double json_speed = json_mb / (json_time_ms / 1000.0);
+
+    std::cout << "[ BENCHMARK ] JSON Parser Throughput:  " << json_speed << " MB/s (" << json_time_ms << " ms total for " << iterations << " iterations)\n";
+
+    // Benchmark 2: Include Lexer Speed
+    std::string mock_code;
+    for (int i = 0; i < 5000; ++i) {
+        mock_code += "#include <vector>\n#include \"my_header" + std::to_string(i % 10) + ".hpp\"\nint x" + std::to_string(i) + " = 0;\n";
+    }
+
+    auto start_lex = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 20; ++i) {
+        auto res = IncludeParser::parse_content(mock_code, "mock.cpp");
+        (void)res;
+    }
+    auto end_lex = std::chrono::high_resolution_clock::now();
+    double lex_time_ms = std::chrono::duration<double, std::milli>(end_lex - start_lex).count();
+    double total_lines = 15000.0 * 20.0;
+    double lines_per_sec = total_lines / (lex_time_ms / 1000.0);
+
+    std::cout << "[ BENCHMARK ] Include Parser Speed:    " << static_cast<long long>(lines_per_sec) << " lines/sec (" << lex_time_ms << " ms total)\n";
+
+    // Benchmark 3: Multi-Tier Project Scan Speed
+    ScanOptions scan_opts;
+    scan_opts.root_path = "examples/synthetic_large_project";
+    ProjectScanner scanner(scan_opts);
+
+    auto start_scan = std::chrono::high_resolution_clock::now();
+    auto scan_res = scanner.scan();
+    auto end_scan = std::chrono::high_resolution_clock::now();
+    double scan_time_ms = std::chrono::duration<double, std::milli>(end_scan - start_scan).count();
+
+    size_t scanned_count = scan_res.is_ok() ? scan_res.value().size() : 0;
+    std::cout << "[ BENCHMARK ] 200-File Project Scan:   " << scan_time_ms << " ms (" << scanned_count << " files scanned)\n";
+
     std::cout << "========================================================\n";
     return 0;
 }

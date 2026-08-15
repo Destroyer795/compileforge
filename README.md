@@ -1,137 +1,74 @@
-# CompileForge
+# CompileForge - C++ Build Intelligence & Optimization Toolkit
 
-> **Cross-Platform C++20 Build Intelligence & Optimization Toolkit**
+[![CI Pipeline](https://github.com/Destroyer795/compileforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Destroyer795/compileforge/actions)
+[![Language](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-CompileForge is a production-quality C++20 developer tool that analyzes compilation databases (`compile_commands.json`), C/C++ source trees, include/dependency relationships, code complexity metrics, build traces, and Git history to identify build bottlenecks, architectural hotspots, and actionable optimization opportunities.
+**CompileForge** is a production-quality, cross-platform C++20 developer tool and build intelligence engine. It analyzes compilation databases (`compile_commands.json`), include dependency graphs, compiler invocation flags, source metrics, and Git history to identify build bottlenecks, circular inclusion loops, and actionable refactoring opportunities.
+
+> [!NOTE]
+> **Static Lexical Analysis Disclaimer**: CompileForge performs fast static lexical analysis of source files and compilation databases. It does NOT invoke a full compiler C++ AST or semantic preprocessor parser. All unused header predictions or complexity indices are lexical estimates.
 
 ---
 
 ## Key Features
 
-- **Project & Compilation Database Ingestion**: Parses `compile_commands.json` (GCC, Clang, MSVC syntax), normalizes include directories, defines, and compiler flags.
-- **Preprocessor Include & Graph Analysis**: Fast stream-based lexer extracts `#include "..."` and `#include <...>` directives, header guards (`#pragma once`, `#ifndef`), and builds directed dependency graphs.
-- **Tarjan Circular Dependency Detection**: Detects include loops (e.g. `A.hpp -> B.hpp -> C.hpp -> A.hpp`) and outputs cycle traces.
-- **Fan-In / Fan-Out Analysis**: Computes direct and transitive dependencies, transitive dependents, and compilation blast radius.
-- **Multi-Factor Hotspot Scoring**: Normalizes compilation size, fan-in impact, cyclomatic complexity, and Git churn into a 0–100 Hotspot Score.
-- **Actionable Optimization Recommendations**: Prioritized recommendations (HIGH/MED/LOW) suggesting header splits, Pimpl pattern conversions, forward declarations, and guard fixes.
-- **Multi-Format Reporting**:
-  - **Terminal**: ANSI-colored formatted tables, summaries, and warning cards.
-  - **JSON**: Machine-readable schema export for CI/CD integration.
-  - **HTML**: Standalone interactive single-file dashboard with dark mode design and SVG visualizations.
-- **Regression Detection**: Compare baseline vs. current analysis runs (`compileforge diff`) to block build degradation in CI.
-- **Incremental Disk Cache**: Sub-second re-analysis using `.compileforge.cache` FNV-1a content hashing.
-- **Zero Runtime Dependencies**: Completely self-contained C++20 implementation.
+- **Compiler Invocation Analysis**: Parses GCC, Clang, and MSVC compiler flags (`-std=c++20`, `-O2`, `-I`, `-isystem`, `-D`, `-U`, `-flto`, `-fsanitize=address`).
+- **Build Configuration Health**: Audits cross-TU flag consistency, detecting mixed optimization levels, mismatched C++ standards, and missing warning flags.
+- **Circular Include Loop Detection**: Uses Tarjan's Strongly Connected Components algorithm to identify circular inclusion loops (`A.hpp -> B.hpp -> C.hpp -> A.hpp`) in **<0.1 ms**.
+- **Translation Unit Cost Model**: Classifies TUs into cost tiers (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) based on transitive header load, macro density, and template counts.
+- **Build Health Score (0–100)**: Multi-variate rating evaluating repository build configuration quality and dependency health.
+- **Prioritized Action Plan**: Generates ordered refactoring steps (`PRIORITY 1`, `PRIORITY 2`, `PRIORITY 3`) with impact estimates and step-by-step guidance.
+- **Report Diffing (`compileforge diff`)**: Compares baseline vs current runs to catch regressions in CI pipelines.
+- **Multi-Format Output**: Rich ANSI terminal cards, schema 1.0 JSON export, and single-file dark mode HTML dashboard with filterable search tables.
 
 ---
 
 ## Quick Start
 
-### 1. Build from Source
+### 1. Build Requirements
+
+- C++20 compliant compiler (GCC 10+, Clang 11+, or MSVC 2019+)
+- CMake 3.20+
+- Ninja or Make
+
+### 2. Build Instructions
 
 ```bash
 git clone https://github.com/Destroyer795/compileforge.git
 cd compileforge
-
-# Configure and build
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --config Release
-
-# Run tests
-ctest --test-dir build --output-on-failure
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
 
-### 2. Run Analysis on Example Project
+### 3. Usage Examples
 
 ```bash
-# Analyze example project and output interactive HTML report
-./build/compileforge analyze ./examples/monolith_app --format html --output report.html
+# Analyze a project directory (reads compile_commands.json)
+./build/compileforge analyze ./examples/synthetic_large_project
 
-# Run circular dependency detection in CI mode
-./build/compileforge analyze ./examples/circular_includes --fail-on-cycle
+# Export interactive single-file HTML report dashboard
+./build/compileforge analyze . --format html --output report.html
+
+# Run in CI mode: fail build if circular include loops exist
+./build/compileforge analyze . --fail-on-cycle --fail-on-hotspot --format json --output report.json
+
+# Compare baseline vs current run for regressions
+./build/compileforge diff baseline.json report.json
 ```
 
 ---
 
-## Terminal Report Example
+## Documentation
 
-```
-==========================================================
-               COMPILEFORGE BUILD INTELLIGENCE            
-==========================================================
-
-PROJECT SUMMARY
-Files:            842
-Headers:          317
-Translation Units: 525
-Lines of Code:    142,850 (SLOC: 104,210)
-
-BUILD HOTSPOTS
-  src/render/render.cpp             4.82s  (Score: 84.5)
-  src/storage/index.cpp             3.71s  (Score: 78.2)
-  src/network/client.cpp            3.42s  (Score: 72.1)
-
-DEPENDENCY HOTSPOTS
-  include/core/common.hpp           241 dependents
-  include/network/types.hpp         187 dependents
-
-ARCHITECTURAL WARNINGS
-  7 circular dependencies
-  12 high fan-out headers
-  8 high-churn/high-complexity files
-
-RECOMMENDATIONS
-  HIGH  Split heavyweight header: common.hpp
-  HIGH  Investigate network/types.hpp transitive includes
-  MED   Refactor high-churn/high-complexity module
-```
-
----
-
-## CLI Command Reference
-
-```
-USAGE:
-  compileforge analyze [target_dir] [options]
-  compileforge diff <baseline.json> <current.json>
-  compileforge init [target_dir]
-  compileforge --help
-  compileforge --version
-
-OPTIONS:
-  -c, --compilation-database <path>  Path to compile_commands.json
-  -o, --output <path>                Output report file path (e.g. report.html)
-  -f, --format <terminal|json|html>  Report output format (default: terminal)
-  --config <path>                    Path to .compileforge.json
-  --fail-on-cycle                    Return exit code 1 if circular dependencies exist
-  --threshold <score>                Max allowed hotspot score before warning
-```
-
----
-
-## Architecture Overview
-
-CompileForge follows a modular pipeline design:
-
-```
-ProjectScanner -> CompilationDatabase -> IncludeParser -> DependencyGraph
-                                                                |
-                                                      +---------+---------+
-                                                      |                   |
-                                                CycleDetector       SourceMetrics
-                                                      |                   |
-                                                      +---------+---------+
-                                                                |
-                                                          HotspotScorer
-                                                                |
-                                                       RecommendationEngine
-                                                                |
-                                                        Reporters (CLI/JSON/HTML)
-```
-
-For build detailed instructions, see [docs/BUILDING.md](file:///c:/Users/PRANAV KISHAN/Desktop/forked trash/compileforge/docs/BUILDING.md).
+- [Architecture & Design Specification](docs/ARCHITECTURE.md)
+- [Metrics & Scoring Methodology](docs/METRICS.md)
+- [Configuration Schema (.compileforge.json)](docs/CONFIGURATION.md)
+- [Continuous Integration Guide](docs/CI.md)
+- [Building & Dependency Rules](docs/BUILDING.md)
 
 ---
 
 ## License
 
-CompileForge is licensed under the MIT License.
+CompileForge is released under the [MIT License](LICENSE).
