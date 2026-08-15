@@ -1,5 +1,6 @@
 #pragma once
 #include "../core/common.hpp"
+#include <cstdint>
 #include <string>
 
 namespace monolith::network {
