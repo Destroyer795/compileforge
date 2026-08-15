@@ -1,26 +1,28 @@
-# CompileForge - C++ Build Intelligence & Optimization Toolkit
+# CompileForge - C++ Build Intelligence & Change-Impact Toolkit
 
 [![CI Pipeline](https://github.com/Destroyer795/compileforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Destroyer795/compileforge/actions)
 [![Language](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**CompileForge** is a production-quality, cross-platform C++20 developer tool and build intelligence engine. It analyzes compilation databases (`compile_commands.json`), include dependency graphs, compiler invocation flags, source metrics, and Git history to identify build bottlenecks, circular inclusion loops, and actionable refactoring opportunities.
+**CompileForge** is a zero-dependency C++ build intelligence and change-impact analysis toolkit. It answers the fundamental question: **"What will this code change cost?"**
+
+By connecting Git revision diffs to C++ preprocessor dependency graphs, CompileForge calculates estimated rebuild surfaces, build cost projections, risk scores (0–100), and ranks review hotspots to guide code reviews and CI risk gates.
 
 > [!NOTE]
-> **Static Lexical Analysis Disclaimer**: CompileForge performs fast static lexical analysis of source files and compilation databases. It does NOT invoke a full compiler C++ AST or semantic preprocessor parser. All unused header predictions or complexity indices are lexical estimates.
+> **Static Lexical Analysis Disclaimer**: CompileForge performs fast static lexical analysis of source files, inclusion directives, and compilation databases. It does NOT invoke a full compiler C++ AST or semantic preprocessor parser. Rebuild surfaces and risk scores represent static dependency estimates.
 
 ---
 
-## Key Features
+## Core Capabilities
 
-- **Compiler Invocation Analysis**: Parses GCC, Clang, and MSVC compiler flags (`-std=c++20`, `-O2`, `-I`, `-isystem`, `-D`, `-U`, `-flto`, `-fsanitize=address`).
-- **Build Configuration Health**: Audits cross-TU flag consistency, detecting mixed optimization levels, mismatched C++ standards, and missing warning flags.
-- **Circular Include Loop Detection**: Uses Tarjan's Strongly Connected Components algorithm to identify circular inclusion loops (`A.hpp -> B.hpp -> C.hpp -> A.hpp`) in **<0.1 ms**.
-- **Translation Unit Cost Model**: Classifies TUs into cost tiers (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) based on transitive header load, macro density, and template counts.
-- **Build Health Score (0–100)**: Multi-variate rating evaluating repository build configuration quality and dependency health.
-- **Prioritized Action Plan**: Generates ordered refactoring steps (`PRIORITY 1`, `PRIORITY 2`, `PRIORITY 3`) with impact estimates and step-by-step guidance.
-- **Report Diffing (`compileforge diff`)**: Compares baseline vs current runs to catch regressions in CI pipelines.
-- **Multi-Format Output**: Rich ANSI terminal cards, schema 1.0 JSON export, and single-file dark mode HTML dashboard with filterable search tables.
+- **Change-Impact Analysis (`compileforge impact`)**: Traces Git diffs (`HEAD~1..HEAD`, `main..HEAD`, or working tree edits) to calculate potentially affected translation units and headers.
+- **Estimated Rebuild Surface**: Computes the exact percentage of project translation units and source lines of code affected by header modifications.
+- **Change Risk Score (0–100)**: Deterministic, explainable risk scoring breaking down impact, build cost, dependency centrality, complexity, churn, and inclusion cycles.
+- **"Why This Change Is Risky"**: Data-driven explanation lists detailing why a change carries review risk.
+- **Review Hotspot Ranking**: Ranks affected files that warrant focused human code review attention.
+- **CI Gate Mode (`--fail-on-risk <threshold>`)**: Acts as a change-risk gate in CI pipelines to prevent high-blast-radius modifications from merging silently.
+- **Compiler Invocation Analysis**: Parses GCC, Clang, and MSVC flags (`-std=c++20`, `-O2`, `-I`, `-isystem`, `-D`, `-U`, `-flto`, `-fsanitize=address`).
+- **Circular Include Loop Detection**: Uses Tarjan's Strongly Connected Components algorithm to find circular inclusion loops (`A.hpp -> B.hpp -> C.hpp -> A.hpp`) in **<0.1 ms**.
 
 ---
 
@@ -44,17 +46,20 @@ cmake --build build
 ### 3. Usage Examples
 
 ```bash
-# Analyze a project directory (reads compile_commands.json)
+# Analyze change-impact of the latest commit
+./build/compileforge impact HEAD~1..HEAD
+
+# Analyze change-impact of modifying a specific header file
+./build/compileforge impact --file include/network/types.hpp
+
+# Run in CI mode: fail PR if Change Risk Score exceeds 70
+./build/compileforge impact HEAD~1..HEAD --fail-on-risk 70 --format json --output impact_report.json
+
+# Analyze whole-project build health & compile database
 ./build/compileforge analyze ./examples/synthetic_large_project
 
-# Export interactive single-file HTML report dashboard
-./build/compileforge analyze . --format html --output report.html
-
-# Run in CI mode: fail build if circular include loops exist
-./build/compileforge analyze . --fail-on-cycle --fail-on-hotspot --format json --output report.json
-
-# Compare baseline vs current run for regressions
-./build/compileforge diff baseline.json report.json
+# Export interactive single-file HTML change-impact dashboard
+./build/compileforge impact HEAD~1..HEAD --format html --output impact.html
 ```
 
 ---
