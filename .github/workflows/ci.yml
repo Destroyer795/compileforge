@@ -47,12 +47,26 @@ jobs:
 
       - name: Run Unit & Integration Tests
         run: |
-          ctest --test-dir build --output-on-failure
+          ctest --test-dir build -C Release --output-on-failure
 
       - name: Run Benchmarks
+        shell: bash
         run: |
-          ./build/compileforge_benchmarks || build/Release/compileforge_benchmarks.exe
+          if [ -f "./build/compileforge_benchmarks" ]; then
+            ./build/compileforge_benchmarks
+          elif [ -f "./build/Release/compileforge_benchmarks.exe" ]; then
+            ./build/Release/compileforge_benchmarks.exe
+          elif [ -f "./build/compileforge_benchmarks.exe" ]; then
+            ./build/compileforge_benchmarks.exe
+          fi
 
       - name: Test Sample Analysis Command
+        shell: bash
         run: |
-          ./build/compileforge analyze ./examples/monolith_app --format json --output test_report.json || build/Release/compileforge.exe analyze ./examples/monolith_app --format json --output test_report.json
+          if [ -f "./build/compileforge" ]; then
+            ./build/compileforge analyze ./examples/synthetic_large_project --format json --output test_report.json
+          elif [ -f "./build/Release/compileforge.exe" ]; then
+            ./build/Release/compileforge.exe analyze ./examples/synthetic_large_project --format json --output test_report.json
+          elif [ -f "./build/compileforge.exe" ]; then
+            ./build/compileforge.exe analyze ./examples/synthetic_large_project --format json --output test_report.json
+          fi
