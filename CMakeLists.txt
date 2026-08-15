@@ -34,6 +34,7 @@ set(COMPILEFORGE_HEADERS
     include/compileforge/core/json.hpp
     include/compileforge/project/scanner.hpp
     include/compileforge/parser/compilation_database.hpp
+    include/compileforge/parser/compiler_invocation.hpp
     include/compileforge/parser/include_parser.hpp
     include/compileforge/graph/dependency_graph.hpp
     include/compileforge/graph/cycle_detector.hpp
@@ -42,6 +43,10 @@ set(COMPILEFORGE_HEADERS
     include/compileforge/git/git_analyzer.hpp
     include/compileforge/analysis/hotspot_scorer.hpp
     include/compileforge/analysis/regression_detector.hpp
+    include/compileforge/analysis/build_config_health.hpp
+    include/compileforge/analysis/include_optimizer.hpp
+    include/compileforge/analysis/tu_cost_analyzer.hpp
+    include/compileforge/analysis/build_health_score.hpp
     include/compileforge/recommendations/recommendation_engine.hpp
     include/compileforge/config/config.hpp
     include/compileforge/cache/analysis_cache.hpp
@@ -56,6 +61,7 @@ set(COMPILEFORGE_SOURCES
     src/core/json.cpp
     src/project/scanner.cpp
     src/parser/compilation_database.cpp
+    src/parser/compiler_invocation.cpp
     src/parser/include_parser.cpp
     src/graph/dependency_graph.cpp
     src/graph/cycle_detector.cpp
@@ -64,6 +70,10 @@ set(COMPILEFORGE_SOURCES
     src/git/git_analyzer.cpp
     src/analysis/hotspot_scorer.cpp
     src/analysis/regression_detector.cpp
+    src/analysis/build_config_health.cpp
+    src/analysis/include_optimizer.cpp
+    src/analysis/tu_cost_analyzer.cpp
+    src/analysis/build_health_score.cpp
     src/recommendations/recommendation_engine.cpp
     src/config/config.cpp
     src/cache/analysis_cache.cpp
@@ -95,11 +105,15 @@ if(COMPILEFORGE_BUILD_TESTS)
         tests/unit/test_json.cpp
         tests/unit/test_scanner.cpp
         tests/unit/test_compilation_database.cpp
+        tests/unit/test_compiler_invocation.cpp
         tests/unit/test_include_parser.cpp
         tests/unit/test_dependency_graph.cpp
         tests/unit/test_cycle_detector.cpp
         tests/unit/test_metrics.cpp
         tests/unit/test_hotspot.cpp
+        tests/unit/test_build_config_health.cpp
+        tests/unit/test_tu_cost.cpp
+        tests/unit/test_build_health_score.cpp
         tests/unit/test_recommendations.cpp
         tests/unit/test_regression.cpp
         tests/unit/test_properties.cpp

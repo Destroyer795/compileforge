@@ -1,89 +1,70 @@
 #include <compileforge/recommendations/recommendation_engine.hpp>
-#include <sstream>
+#include <compileforge/core/utils.hpp>
 #include <algorithm>
+#include <sstream>
 
 namespace compileforge {
 
 std::vector<Recommendation> RecommendationEngine::generate_recommendations(
     const DependencyGraph& graph,
-    const std::vector<DependencyCycle>& cycles
+    const std::vector<DependencyCycle>& cycles,
+    const Config& config
 ) {
     std::vector<Recommendation> recs;
-    size_t rec_counter = 1;
+    size_t priority_idx = 1;
 
-    // Rule 1: Circular dependencies (HIGH)
-    for (const auto& cycle : cycles) {
-        Recommendation rec;
-        rec.id = "REC-CYCLE-" + std::to_string(rec_counter++);
-        rec.severity = Severity::High;
-        rec.target_file = cycle.cycle_path.empty() ? "" : cycle.cycle_path[0];
-        rec.title = "Fix circular dependency loop (" + std::to_string(cycle.length) + " files)";
+    // 1. Circular Dependencies (Highest priority)
+    if (!cycles.empty()) {
+        for (const auto& cycle : cycles) {
+            Recommendation r;
+            std::ostringstream ss_id;
+            ss_id << "PRIORITY " << priority_idx++;
+            r.id = ss_id.str();
+            r.severity = Severity::High;
+            r.target_file = cycle.cycle_path.empty() ? "" : cycle.cycle_path.front();
+            r.title = "Remove circular include dependency loop";
 
-        std::ostringstream ss;
-        ss << "Include cycle detected: ";
-        for (size_t i = 0; i < cycle.cycle_path.size(); ++i) {
-            ss << cycle.cycle_path[i];
-            if (i + 1 < cycle.cycle_path.size()) ss << " -> ";
+            std::ostringstream ss_desc;
+            ss_desc << "Cycle detected (" << cycle.length << " files): ";
+            for (size_t i = 0; i < cycle.cycle_path.size(); ++i) {
+                ss_desc << cycle.cycle_path[i];
+                if (i + 1 < cycle.cycle_path.size()) ss_desc << " -> ";
+            }
+            r.description = ss_desc.str();
+            r.actionable_step = "Use forward declarations or split shared definitions into a separate light interface header.";
+            recs.push_back(r);
         }
-        rec.description = ss.str();
-        rec.actionable_step = "Use forward declarations or move shared declarations into a standalone header to break the cycle.";
-        recs.push_back(std::move(rec));
     }
 
+    // 2. High Fan-In Headers
     for (const auto& path : graph.all_nodes()) {
         const auto* node = graph.get_node(path);
         if (!node) continue;
 
-        // Rule 2: Heavyweight header with high fan-in (HIGH)
-        if (node->kind == FileKind::Header && node->fan_stats.fan_in_transitive > 10 && node->metrics.total_lines > 250) {
-            Recommendation rec;
-            rec.id = "REC-HEADER-" + std::to_string(rec_counter++);
-            rec.severity = Severity::High;
-            rec.target_file = node->relative_path;
-            rec.title = "Split heavyweight header: " + node->relative_path;
-            rec.description = node->relative_path + " has " + std::to_string(node->fan_stats.fan_in_transitive) +
-                             " dependents and " + std::to_string(node->metrics.total_lines) + " lines of code.";
-            rec.actionable_step = "Extract template specializations or implementation details into a separate _impl.hpp or .cpp file.";
-            recs.push_back(std::move(rec));
-        }
+        if (node->kind == FileKind::Header && node->fan_stats.fan_in_transitive >= config.fan_in_threshold) {
+            Recommendation r;
+            std::ostringstream ss_id;
+            ss_id << "PRIORITY " << priority_idx++;
+            r.id = ss_id.str();
+            r.severity = Severity::High;
+            r.target_file = node->relative_path;
+            r.title = "Investigate heavyweight common header: " + node->relative_path;
 
-        // Rule 3: High Churn & High Complexity (HIGH)
-        if (node->git_data.commit_count > 10 && node->metrics.cyclomatic_complexity > 15) {
-            Recommendation rec;
-            rec.id = "REC-CHURN-" + std::to_string(rec_counter++);
-            rec.severity = Severity::High;
-            rec.target_file = node->relative_path;
-            rec.title = "Refactor high-churn/high-complexity module: " + node->relative_path;
-            rec.description = node->relative_path + " has high commit frequency (" + std::to_string(node->git_data.commit_count) +
-                             " commits) and high complexity (" + std::to_string(node->metrics.cyclomatic_complexity) + ").";
-            rec.actionable_step = "Decompose large functions and extract reusable component classes to reduce regression risk.";
-            recs.push_back(std::move(rec));
-        }
-
-        // Rule 4: High fan-out file (MED)
-        if (node->fan_stats.fan_out_direct > 15) {
-            Recommendation rec;
-            rec.id = "REC-FANOUT-" + std::to_string(rec_counter++);
-            rec.severity = Severity::Medium;
-            rec.target_file = node->relative_path;
-            rec.title = "Reduce transitive includes in: " + node->relative_path;
-            rec.description = node->relative_path + " directly includes " + std::to_string(node->fan_stats.fan_out_direct) + " headers.";
-            rec.actionable_step = "Audit direct include list and remove unused header inclusions.";
-            recs.push_back(std::move(rec));
-        }
-
-        // Rule 5: Missing header guard / #pragma once (MED)
-        if (node->kind == FileKind::Header && !node->metrics.has_pragma_once && !node->metrics.has_header_guard) {
-            Recommendation rec;
-            rec.id = "REC-GUARD-" + std::to_string(rec_counter++);
-            rec.severity = Severity::Medium;
-            rec.target_file = node->relative_path;
-            rec.title = "Add header guard or #pragma once: " + node->relative_path;
-            rec.description = node->relative_path + " lacks a standard include guard or #pragma once directive.";
-            rec.actionable_step = "Add '#pragma once' to the top of the header file.";
-            recs.push_back(std::move(rec));
+            std::ostringstream ss_desc;
+            ss_desc << "Header has " << node->fan_stats.fan_in_transitive << " transitive dependents. Modifications trigger widespread rebuilds.";
+            r.description = ss_desc.str();
+            r.actionable_step = "PImpl pattern or split header into focused micro-headers to minimize blast radius.";
+            recs.push_back(r);
         }
     }
+
+    // Sort recommendations by severity and priority
+    std::sort(recs.begin(), recs.end(), [](const Recommendation& a, const Recommendation& b) {
+        if (a.severity != b.severity) {
+            return static_cast<int>(a.severity) > static_cast<int>(b.severity);
+        }
+        return a.id < b.id;
+    });
 
     return recs;
 }

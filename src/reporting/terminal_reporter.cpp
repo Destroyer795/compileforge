@@ -23,13 +23,44 @@ void TerminalReporter::print(const AnalysisReport& report, bool use_colors) {
     std::cout << BOLD << CYAN << "               COMPILEFORGE BUILD INTELLIGENCE            " << RESET << "\n";
     std::cout << BOLD << CYAN << "==========================================================" << RESET << "\n\n";
 
+    std::cout << BOLD << "BUILD HEALTH SCORE: " << (report.health_score.score >= 80 ? GREEN : (report.health_score.score >= 50 ? YELLOW : RED))
+              << report.health_score.score << "/100" << RESET << "\n";
+    for (const auto& pos : report.health_score.positive_factors) {
+        std::cout << "  " << GREEN << pos << RESET << "\n";
+    }
+    for (const auto& neg : report.health_score.negative_factors) {
+        std::cout << "  " << RED << neg << RESET << "\n";
+    }
+    std::cout << "\n";
+
     std::cout << BOLD << "PROJECT SUMMARY" << RESET << "\n";
     std::cout << "  Files:            " << report.summary.total_files << "\n";
     std::cout << "  Headers:          " << report.summary.total_headers << "\n";
     std::cout << "  Translation Units:" << report.summary.total_translation_units << "\n";
     std::cout << "  Lines of Code:    " << report.summary.total_loc << " (SLOC: " << report.summary.total_sloc << ")\n\n";
 
-    std::cout << BOLD << "BUILD HEALTH & HOTSPOTS" << RESET << "\n";
+    if (!report.build_config_findings.empty()) {
+        std::cout << BOLD << "BUILD CONFIGURATION HEALTH" << RESET << "\n";
+        for (const auto& finding : report.build_config_findings) {
+            std::cout << "  " << YELLOW << "WARNING: " << finding.category << RESET << " - " << finding.message << "\n";
+            std::cout << "        -> " << finding.actionable_recommendation << "\n";
+        }
+        std::cout << "\n";
+    }
+
+    if (!report.tu_cost_profiles.empty()) {
+        std::cout << BOLD << "TOP COSTLY TRANSLATION UNITS" << RESET << "\n";
+        for (size_t i = 0; i < std::min<size_t>(5, report.tu_cost_profiles.size()); ++i) {
+            const auto& prof = report.tu_cost_profiles[i];
+            const char* tier_color = (prof.tier == TUCostTier::Critical ? RED : (prof.tier == TUCostTier::High ? YELLOW : CYAN));
+            std::cout << "  " << std::left << std::setw(32) << prof.relative_path
+                      << " " << tier_color << std::setw(8) << tu_cost_tier_to_string(prof.tier) << RESET
+                      << " Transitive Headers: " << prof.transitive_headers << "\n";
+        }
+        std::cout << "\n";
+    }
+
+    std::cout << BOLD << "BUILD HOTSPOTS" << RESET << "\n";
     if (report.top_hotspots.empty()) {
         std::cout << "  No significant hotspots detected.\n";
     } else {
@@ -38,47 +69,21 @@ void TerminalReporter::print(const AnalysisReport& report, bool use_colors) {
             std::cout << "  " << std::left << std::setw(32) << node.relative_path
                       << " " << std::right << std::setw(6) << std::fixed << std::setprecision(2)
                       << node.build_time.compilation_seconds << "s"
-                      << "  Score: " << std::setprecision(1) << node.hotspot.total_score;
-            if (!node.hotspot.score_breakdown.empty()) {
-                std::cout << " (" << node.hotspot.score_breakdown << ")";
-            }
-            std::cout << "\n";
+                      << "  Score: " << std::setprecision(1) << node.hotspot.total_score << "\n";
         }
     }
     std::cout << "\n";
 
-    std::cout << BOLD << "DEPENDENCY HOTSPOTS" << RESET << "\n";
-    if (report.top_fanin_headers.empty()) {
-        std::cout << "  No high fan-in headers.\n";
-    } else {
-        for (size_t i = 0; i < std::min<size_t>(5, report.top_fanin_headers.size()); ++i) {
-            const auto& node = report.top_fanin_headers[i];
-            std::cout << "  " << std::left << std::setw(32) << node.relative_path
-                      << " " << std::right << std::setw(4) << node.fan_stats.fan_in_transitive << " dependents\n";
-        }
-    }
-    std::cout << "\n";
-
-    std::cout << BOLD << "ARCHITECTURAL WARNINGS" << RESET << "\n";
-    if (report.summary.circular_dependency_count > 0) {
-        std::cout << "  " << RED << report.summary.circular_dependency_count << " circular dependencies" << RESET << "\n";
-    } else {
-        std::cout << "  " << GREEN << "0 circular dependencies" << RESET << "\n";
-    }
-    std::cout << "  " << (report.summary.high_fanout_header_count > 0 ? YELLOW : GREEN)
-              << report.summary.high_fanout_header_count << " high fan-out headers" << RESET << "\n";
-    std::cout << "  " << (report.summary.high_churn_complexity_count > 0 ? MAGENTA : GREEN)
-              << report.summary.high_churn_complexity_count << " high-churn/high-complexity files" << RESET << "\n\n";
-
-    std::cout << BOLD << "RECOMMENDATIONS & ACTION ITEMS" << RESET << "\n";
+    std::cout << BOLD << "PRIORITIZED ACTION PLAN" << RESET << "\n";
     if (report.recommendations.empty()) {
         std::cout << "  " << GREEN << "No critical recommendations. Clean build architecture!" << RESET << "\n";
     } else {
         for (const auto& rec : report.recommendations) {
             const char* sev_color = (rec.severity == Severity::High) ? RED : (rec.severity == Severity::Medium ? YELLOW : CYAN);
-            std::cout << "  " << sev_color << std::left << std::setw(5) << severity_to_string(rec.severity) << RESET
+            std::cout << "  " << sev_color << std::left << std::setw(12) << rec.id << RESET
                       << " " << rec.title << "\n";
-            std::cout << "        -> " << rec.actionable_step << "\n";
+            std::cout << "        Reason: " << rec.description << "\n";
+            std::cout << "        Action: " << rec.actionable_step << "\n";
         }
     }
     std::cout << "\n";

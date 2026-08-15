@@ -1,12 +1,4 @@
-#include <iostream>
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <filesystem>
-#include <fstream>
-
 #include <compileforge/core/result.hpp>
-#include <compileforge/core/types.hpp>
 #include <compileforge/core/utils.hpp>
 #include <compileforge/project/scanner.hpp>
 #include <compileforge/parser/compilation_database.hpp>
@@ -18,259 +10,246 @@
 #include <compileforge/git/git_analyzer.hpp>
 #include <compileforge/analysis/hotspot_scorer.hpp>
 #include <compileforge/analysis/regression_detector.hpp>
+#include <compileforge/analysis/build_config_health.hpp>
+#include <compileforge/analysis/include_optimizer.hpp>
+#include <compileforge/analysis/tu_cost_analyzer.hpp>
+#include <compileforge/analysis/build_health_score.hpp>
+#include <compileforge/config/config.hpp>
 #include <compileforge/recommendations/recommendation_engine.hpp>
 #include <compileforge/config/config.hpp>
 #include <compileforge/cache/analysis_cache.hpp>
 #include <compileforge/reporting/report.hpp>
+#include <iostream>
+#include <fstream>
 
 using namespace compileforge;
 
-static void print_usage() {
-    std::cout << R"(CompileForge - C++ Build Intelligence & Architecture Toolkit v1.0.0
+void print_usage() {
+    std::cout << R"(
+CompileForge - C++ Build Intelligence & Optimization Toolkit
 
 USAGE:
-  compileforge analyze [target_dir] [options]
-  compileforge diff <baseline.json> <current.json>
-  compileforge init [target_dir]
-  compileforge --help
-  compileforge --version
+  compileforge <subcommand> [options]
 
-OPTIONS:
-  -c, --compilation-database <path>  Path to compile_commands.json
-  -o, --output <path>                Output report file path
-  -f, --format <terminal|json|html>  Report format (default: terminal)
-  --config <path>                    Path to .compileforge.json
-  --fail-on-cycle                    Return exit code 1 if circular dependencies found
-  --threshold <score>                Max allowed hotspot score (default: 80.0)
+SUBCOMMANDS:
+  analyze <project_path>    Analyze compilation database and include graph
+  diff <old.json> <new.json> Compare two analysis reports for regressions
+  init [project_path]       Initialize a .compileforge.json configuration file
+  --help, -h                Show this help message
+  --version, -v             Show version information
+
+ANALYZE OPTIONS:
+  --compilation-database, -db <path> Path to compile_commands.json
+  --format <terminal|json|html>      Output format (default: terminal)
+  --output, -o <file>                Save report to file
+  --fail-on-cycle                    Exit with non-zero code if cycles detected
+  --fail-on-hotspot                  Exit with non-zero code if hotspots score > 80
+  --quiet, -q                        Suppress non-essential terminal output
+  --no-color                         Disable ANSI terminal colors
 )";
 }
 
-static int handle_analyze(const std::vector<std::string>& args) {
-    std::string target_dir = ".";
+int handle_analyze(int argc, char* argv[]) {
+    std::string project_path = ".";
     std::string comp_db_path;
-    std::string output_path;
     std::string format = "terminal";
-    std::string config_path;
+    std::string output_file;
     bool fail_on_cycle = false;
-    double threshold = 80.0;
+    bool fail_on_hotspot = false;
+    bool quiet = false;
 
-    for (size_t i = 0; i < args.size(); ++i) {
-        const std::string& arg = args[i];
-        if (arg == "-c" || arg == "--compilation-database") {
-            if (i + 1 < args.size()) comp_db_path = args[++i];
-        } else if (arg == "-o" || arg == "--output") {
-            if (i + 1 < args.size()) output_path = args[++i];
-        } else if (arg == "-f" || arg == "--format") {
-            if (i + 1 < args.size()) format = args[++i];
-        } else if (arg == "--config") {
-            if (i + 1 < args.size()) config_path = args[++i];
+    for (int i = 2; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--compilation-database" || arg == "-db") {
+            if (i + 1 < argc) comp_db_path = argv[++i];
+        } else if (arg == "--format") {
+            if (i + 1 < argc) format = argv[++i];
+        } else if (arg == "--output" || arg == "-o") {
+            if (i + 1 < argc) output_file = argv[++i];
         } else if (arg == "--fail-on-cycle") {
             fail_on_cycle = true;
-        } else if (arg == "--threshold") {
-            if (i + 1 < args.size()) threshold = std::stod(args[++i]);
-        } else if (!utils::starts_with(arg, "-")) {
-            target_dir = arg;
+        } else if (arg == "--fail-on-hotspot") {
+            fail_on_hotspot = true;
+        } else if (arg == "--quiet" || arg == "-q") {
+            quiet = true;
+        } else if (arg == "--no-color") {
+            // Handled via std::getenv or isatty
+        } else if (arg[0] != '-') {
+            project_path = arg;
         }
     }
 
-    target_dir = utils::normalize_path(target_dir);
-    if (!std::filesystem::exists(target_dir)) {
-        std::cerr << "Error: Target directory does not exist: " << target_dir << "\n";
-        return 1;
-    }
+    project_path = utils::normalize_path(project_path);
+    std::string cfg_filepath = (std::filesystem::path(project_path) / ".compileforge.json").string();
+    auto cfg_res = Config::load_file(cfg_filepath);
+    Config config = cfg_res.is_ok() ? cfg_res.value() : Config::default_config();
 
-    // 1. Load config
-    Config cfg = Config::default_config();
-    if (!config_path.empty()) {
-        auto cfg_res = Config::load_file(config_path);
-        if (cfg_res.has_value()) cfg = cfg_res.value();
-    } else {
-        std::filesystem::path cfg_file = std::filesystem::path(target_dir) / ".compileforge.json";
-        if (std::filesystem::exists(cfg_file)) {
-            auto cfg_res = Config::load_file(cfg_file.string());
-            if (cfg_res.has_value()) cfg = cfg_res.value();
-        }
-    }
-
-    // 2. Scan project files
     ScanOptions scan_opts;
-    scan_opts.root_path = target_dir;
-    scan_opts.ignore_patterns = cfg.exclude_paths;
+    scan_opts.root_path = project_path;
+    scan_opts.ignore_patterns = config.ignore_patterns;
+
     ProjectScanner scanner(scan_opts);
     auto scan_res = scanner.scan();
     if (scan_res.is_error()) {
-        std::cerr << "Error scanning project: " << scan_res.error().to_string() << "\n";
+        std::cerr << "Error scanning project: " << scan_res.error().message << "\n";
         return 1;
     }
+
     auto files = scan_res.value();
-
-    // 3. Load compilation database
-    CompilationDatabase comp_db;
-    if (comp_db_path.empty()) {
-        std::filesystem::path default_db = std::filesystem::path(target_dir) / "compile_commands.json";
-        if (std::filesystem::exists(default_db)) {
-            comp_db_path = default_db.string();
-        }
-    }
-    if (!comp_db_path.empty()) {
-        auto db_res = CompilationDatabase::load_file(comp_db_path);
-        if (db_res.has_value()) {
-            comp_db = db_res.value();
-        }
-    }
-
-    // 4. Load cache
-    std::filesystem::path cache_file = std::filesystem::path(target_dir) / ".compileforge.cache";
-    AnalysisCache cache = AnalysisCache::load(cache_file.string()).value_or(AnalysisCache{});
-
-    // 5. Build Dependency Graph
     DependencyGraph graph;
-    std::vector<std::string> search_dirs = cfg.custom_include_dirs;
+    std::vector<std::string> search_dirs;
 
+    if (comp_db_path.empty()) {
+        comp_db_path = (std::filesystem::path(project_path) / "compile_commands.json").string();
+    }
+
+    CompilationDatabase comp_db;
+    if (std::filesystem::exists(comp_db_path)) {
+        auto db_res = CompilationDatabase::load_file(comp_db_path);
+        if (db_res.is_ok()) {
+            comp_db = db_res.value();
+            for (const auto& entry : comp_db.entries()) {
+                for (const auto& inc : entry.include_dirs) {
+                    search_dirs.push_back(inc);
+                }
+            }
+        }
+    }
+
+    // Build dependency graph
     for (auto& file : files) {
-        const auto* comp_entry = comp_db.find_entry(file.canonical_path);
-        std::vector<std::string> file_search_dirs = search_dirs;
-        if (comp_entry) {
-            file_search_dirs.insert(file_search_dirs.end(), comp_entry->include_dirs.begin(), comp_entry->include_dirs.end());
-        }
-
-        const auto* cached = cache.get(file.relative_path, file.content_hash);
-        if (cached) {
-            file.metrics = cached->metrics;
-            file.includes = cached->includes;
-        } else {
-            auto parse_res = IncludeParser::parse_file(file.canonical_path);
-            if (parse_res.has_value()) {
-                file.metrics = parse_res.value().metrics;
-                file.includes = parse_res.value().includes;
-                cache.put(file.relative_path, file.content_hash, file.metrics, file.includes);
-            }
-        }
-
-        // Resolve includes
-        for (auto& inc : file.includes) {
-            inc.resolved_path = IncludeParser::resolve_include_path(inc, file.canonical_path, file_search_dirs, target_dir);
-            if (!inc.resolved_path.empty()) {
-                inc.is_resolved = true;
-                std::string rel_inc = utils::to_relative_path(inc.resolved_path, target_dir);
-                graph.add_edge(file.relative_path, rel_inc);
-            }
-        }
-
         graph.add_node(file);
-    }
+        auto parse_res = IncludeParser::parse_file(file.canonical_path);
+        if (parse_res.is_ok()) {
+            file.metrics = parse_res.value().metrics;
+            file.includes = parse_res.value().includes;
 
-    // Save cache
-    (void)cache.save(cache_file.string());
-
-    // 6. Graph & Metrics computation
-    graph.compute_fan_stats();
-    BuildTraceAnalyzer::estimate_build_times(graph);
-    GitAnalyzer::enrich_graph(graph, target_dir);
-    HotspotScorer::compute_hotspots(graph);
-
-    // 7. Cycle detection
-    auto cycles = CycleDetector::detect_cycles(graph);
-
-    // 8. Summary & Recommendations
-    ProjectSummary summary = SourceMetrics::compute_summary(graph, cycles.size());
-    auto recommendations = RecommendationEngine::generate_recommendations(graph, cycles);
-
-    // Build Report Object
-    AnalysisReport report;
-    report.summary = summary;
-    report.cycles = cycles;
-    report.recommendations = recommendations;
-    report.top_hotspots = HotspotScorer::get_top_hotspots(graph, 10);
-
-    for (const auto& path : graph.all_nodes()) {
-        const auto* n = graph.get_node(path);
-        if (n) report.files.push_back(*n);
-    }
-
-    std::sort(report.files.begin(), report.files.end(), [](const FileNode& a, const FileNode& b) {
-        return a.fan_stats.fan_in_transitive > b.fan_stats.fan_in_transitive;
-    });
-
-    for (size_t i = 0; i < std::min<size_t>(5, report.files.size()); ++i) {
-        if (report.files[i].kind == FileKind::Header) {
-            report.top_fanin_headers.push_back(report.files[i]);
+            for (const auto& inc : file.includes) {
+                std::string resolved = IncludeParser::resolve_include_path(inc, file.canonical_path, search_dirs, project_path);
+                if (!resolved.empty()) {
+                    graph.add_edge(file.relative_path, utils::to_relative_path(resolved, project_path));
+                }
+            }
         }
     }
 
-    // 9. Output generation
+    HotspotScorer::compute_hotspots(graph);
+    auto cycles = CycleDetector::detect_cycles(graph);
+    auto build_config_findings = BuildConfigHealthAnalyzer::analyze(comp_db);
+    auto tu_cost_profiles = TUCostAnalyzer::analyze_all_tus(graph);
+    auto health_score = BuildHealthScorer::compute_score(graph, cycles.size(), build_config_findings);
+    auto recs = RecommendationEngine::generate_recommendations(graph, cycles, config);
+
+    AnalysisReport report;
+    report.summary.total_files = files.size();
+    report.summary.total_headers = 0;
+    report.summary.total_translation_units = 0;
+    report.summary.total_loc = 0;
+    report.summary.total_sloc = 0;
+    report.summary.circular_dependency_count = cycles.size();
+
+    for (const auto& f : files) {
+        if (f.kind == FileKind::Header) report.summary.total_headers++;
+        else if (f.kind == FileKind::TranslationUnit) report.summary.total_translation_units++;
+        report.summary.total_loc += f.metrics.total_lines;
+        report.summary.total_sloc += f.metrics.sloc;
+    }
+
+    report.health_score = health_score;
+    report.files = files;
+    report.top_hotspots = HotspotScorer::get_top_hotspots(graph, 10);
+    report.cycles = cycles;
+    report.recommendations = recs;
+    report.build_config_findings = build_config_findings;
+    report.tu_cost_profiles = tu_cost_profiles;
+
     if (format == "json") {
-        std::string json_output = JsonReporter::render(report, 2);
-        if (!output_path.empty()) {
-            std::ofstream ofs(output_path);
-            ofs << json_output;
-            std::cout << "JSON report saved to: " << output_path << "\n";
+        std::string json_str = JsonReporter::render(report);
+        if (!output_file.empty()) {
+            std::ofstream ofs(output_file);
+            ofs << json_str;
+            if (!quiet) std::cout << "JSON report saved to: " << output_file << "\n";
         } else {
-            std::cout << json_output << "\n";
+            std::cout << json_str << "\n";
         }
     } else if (format == "html") {
-        std::string html_output = HtmlReporter::render(report, target_dir);
-        if (output_path.empty()) output_path = "compileforge_report.html";
-        std::ofstream ofs(output_path);
-        ofs << html_output;
-        std::cout << "HTML report saved to: " << output_path << "\n";
+        std::string html_str = HtmlReporter::render(report, project_path);
+        if (!output_file.empty()) {
+            std::ofstream ofs(output_file);
+            ofs << html_str;
+            if (!quiet) std::cout << "HTML report saved to: " << output_file << "\n";
+        } else {
+            std::cout << html_str << "\n";
+        }
     } else {
-        TerminalReporter::print(report, true);
+        if (!quiet) {
+            TerminalReporter::print(report);
+        }
     }
 
     if (fail_on_cycle && !cycles.empty()) {
         std::cerr << "CI Failure: " << cycles.size() << " circular dependency loop(s) detected.\n";
         return 1;
     }
-
-    for (const auto& spot : report.top_hotspots) {
-        if (spot.hotspot.total_score > threshold) {
-            std::cout << "Warning: Hotspot score for " << spot.relative_path << " (" << spot.hotspot.total_score << ") exceeds threshold (" << threshold << ").\n";
-        }
-    }
-
-    return 0;
-}
-
-static int handle_diff(const std::string& baseline_path, const std::string& current_path) {
-    auto res = RegressionDetector::compare_files(baseline_path, current_path);
-    if (res.is_error()) {
-        std::cerr << "Diff Error: " << res.error().to_string() << "\n";
+    if (fail_on_hotspot && !report.top_hotspots.empty() && report.top_hotspots.front().hotspot.total_score > 80.0) {
+        std::cerr << "CI Failure: Hotspot score exceeds threshold 80.0.\n";
         return 1;
     }
 
-    const auto& report = res.value();
-    if (!report.has_regressions) {
-        std::cout << "SUCCESS: No build regressions detected between baseline and current runs.\n";
-        return 0;
-    }
-
-    std::cout << "REGRESSIONS DETECTED (" << report.deltas.size() << " issues):\n";
-    for (const auto& delta : report.deltas) {
-        std::cout << "  [" << delta.category << "] " << delta.file << ": " << delta.message << "\n";
-    }
-    return 1;
+    return 0;
 }
 
-static int handle_init(const std::string& target_dir) {
-    std::filesystem::path cfg_path = std::filesystem::path(target_dir) / ".compileforge.json";
-    if (std::filesystem::exists(cfg_path)) {
-        std::cout << ".compileforge.json already exists in " << target_dir << "\n";
-        return 0;
+int handle_diff(int argc, char* argv[]) {
+    if (argc < 4) {
+        std::cerr << "Usage: compileforge diff <baseline.json> <target.json>\n";
+        return 1;
+    }
+    std::string base_path = argv[2];
+    std::string target_path = argv[3];
+
+    std::ifstream f1(base_path), f2(target_path);
+    if (!f1 || !f2) {
+        std::cerr << "Error: Could not open baseline or target report JSON files.\n";
+        return 1;
+    }
+    std::string c1((std::istreambuf_iterator<char>(f1)), std::istreambuf_iterator<char>());
+    std::string c2((std::istreambuf_iterator<char>(f2)), std::istreambuf_iterator<char>());
+
+    auto j1 = JsonValue::parse(c1);
+    auto j2 = JsonValue::parse(c2);
+    if (j1.is_error() || j2.is_error()) {
+        std::cerr << "Error parsing report JSON for diff.\n";
+        return 1;
     }
 
-    Config cfg = Config::default_config();
-    JsonValue::ObjectType root;
-    JsonValue::ArrayType exc;
-    for (const auto& p : cfg.exclude_paths) exc.push_back(p);
-    root["exclude_paths"] = exc;
-    root["max_hotspot_score_threshold"] = cfg.max_hotspot_score_threshold;
-    root["fail_on_cycles"] = cfg.fail_on_cycles;
+    auto diff_res = RegressionDetector::compare_reports(j1.value(), j2.value());
+    if (diff_res.is_regression) {
+        std::cerr << "REGRESSION DETECTED!\n";
+        for (const auto& msg : diff_res.regression_messages) {
+            std::cerr << "  " << msg << "\n";
+        }
+        return 1;
+    }
 
-    std::ofstream ofs(cfg_path);
-    ofs << JsonValue(root).serialize(2);
-    std::cout << "Initialized .compileforge.json in " << target_dir << "\n";
+    std::cout << "SUCCESS: No build regressions detected between baseline and current runs.\n";
     return 0;
+}
+
+int handle_init(int argc, char* argv[]) {
+    std::string proj = ".";
+    if (argc >= 3) proj = argv[2];
+    std::string cfg_path = (std::filesystem::path(proj) / ".compileforge.json").string();
+    if (std::filesystem::exists(cfg_path)) {
+        std::cout << "Configuration file already exists at: " << cfg_path << "\n";
+        return 0;
+    }
+    Config opts = Config::default_config();
+    if (Config::save_config(cfg_path, opts)) {
+        std::cout << "Initialized CompileForge configuration at: " << cfg_path << "\n";
+        return 0;
+    }
+    std::cerr << "Failed to write configuration file.\n";
+    return 1;
 }
 
 int main(int argc, char* argv[]) {
@@ -279,37 +258,22 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    std::vector<std::string> args;
-    for (int i = 1; i < argc; ++i) {
-        args.push_back(argv[i]);
-    }
-
-    std::string command = args[0];
-    if (command == "--help" || command == "-h" || command == "help") {
+    std::string command = argv[1];
+    if (command == "--help" || command == "-h") {
         print_usage();
         return 0;
-    }
-    if (command == "--version" || command == "-v" || command == "version") {
-        std::cout << "CompileForge v1.0.0 (C++20)\n";
+    } else if (command == "--version" || command == "-v") {
+        std::cout << "CompileForge v1.0.0 (C++20 Build Intelligence Toolkit)\n";
         return 0;
+    } else if (command == "analyze") {
+        return handle_analyze(argc, argv);
+    } else if (command == "diff") {
+        return handle_diff(argc, argv);
+    } else if (command == "init") {
+        return handle_init(argc, argv);
+    } else {
+        std::cerr << "Unknown command: " << command << "\n";
+        print_usage();
+        return 1;
     }
-
-    if (command == "analyze") {
-        std::vector<std::string> sub_args(args.begin() + 1, args.end());
-        return handle_analyze(sub_args);
-    }
-    if (command == "diff") {
-        if (args.size() < 3) {
-            std::cerr << "Usage: compileforge diff <baseline.json> <current.json>\n";
-            return 1;
-        }
-        return handle_diff(args[1], args[2]);
-    }
-    if (command == "init") {
-        std::string target = (args.size() >= 2) ? args[1] : ".";
-        return handle_init(target);
-    }
-
-    // Default to analyze command if positional argument is directory
-    return handle_analyze(args);
 }

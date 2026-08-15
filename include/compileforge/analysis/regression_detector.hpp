@@ -3,28 +3,27 @@
 
 #include <string>
 #include <vector>
-#include <compileforge/core/result.hpp>
 #include <compileforge/core/json.hpp>
 
 namespace compileforge {
 
-struct RegressionDelta {
-    std::string category;
-    std::string file;
-    std::string message;
-    double old_value{0.0};
-    double new_value{0.0};
-};
-
-struct RegressionReport {
-    bool has_regressions{false};
-    std::vector<RegressionDelta> deltas;
+struct RegressionResult {
+    bool is_regression{false};
+    int health_score_before{100};
+    int health_score_after{100};
+    int health_score_change{0};
+    size_t new_cycle_count{0};
+    size_t resolved_cycle_count{0};
+    std::vector<std::string> new_hotspots;
+    std::vector<std::string> resolved_hotspots;
+    long long loc_change{0};
+    std::vector<std::string> regression_messages;
+    std::vector<std::string> improvement_messages;
 };
 
 class RegressionDetector {
 public:
-    static Result<RegressionReport> compare(const JsonValue& baseline_json, const JsonValue& current_json);
-    static Result<RegressionReport> compare_files(const std::string& baseline_path, const std::string& current_path);
+    static RegressionResult compare_reports(const JsonValue& baseline_json, const JsonValue& current_json);
 };
 
 } // namespace compileforge

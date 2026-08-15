@@ -15,6 +15,11 @@ public:
     static Result<CompilationDatabase> load_file(const std::string& json_filepath);
     static Result<CompilationDatabase> load_json(const JsonValue& json_root);
 
+    void add_entry(CompileCommandEntry entry) {
+        file_to_entry_index_[entry.file] = entries_.size();
+        entries_.push_back(std::move(entry));
+    }
+
     [[nodiscard]] const std::vector<CompileCommandEntry>& entries() const { return entries_; }
     [[nodiscard]] const CompileCommandEntry* find_entry(const std::string& filepath) const;
 

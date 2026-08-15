@@ -62,6 +62,10 @@ public:
         return std::holds_alternative<T>(storage_);
     }
 
+    [[nodiscard]] bool is_ok() const noexcept {
+        return has_value();
+    }
+
     [[nodiscard]] bool is_error() const noexcept {
         return std::holds_alternative<Error>(storage_);
     }
