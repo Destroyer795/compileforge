@@ -71,8 +71,8 @@ ImpactAnalysisResult ImpactAnalyzer::analyze_impact(
             }
             affected_loc += node->metrics.sloc;
 
-            // Visit dependents
-            auto dependents = graph.get_transitive_dependents(curr_node_path);
+            // Visit direct dependents
+            const auto& dependents = graph.get_incoming_edges(curr_node_path);
             for (const auto& dep : dependents) {
                 if (visited_distances.find(dep) == visited_distances.end()) {
                     visited_distances[dep] = dist + 1;
@@ -101,8 +101,31 @@ ImpactAnalysisResult ImpactAnalyzer::analyze_impact(
     }
 
     // Build Cost Estimation
-    result.cost_estimate.has_measured_timings = false;
-    result.cost_estimate.basis_explanation = "No measured build trace timings available for affected files.";
+    double measured_compile_time = 0.0;
+    size_t measured_count = 0;
+    for (const auto& aff : result.affected_nodes) {
+        if (aff.is_translation_unit) {
+            const auto* node = graph.get_node(aff.relative_path);
+            if (node && node->build_time.is_measured && node->build_time.compilation_seconds > 0.0) {
+                measured_compile_time += node->build_time.compilation_seconds;
+                measured_count++;
+            }
+        }
+    }
+
+    if (measured_count > 0) {
+        result.cost_estimate.has_measured_timings = true;
+        result.cost_estimate.estimated_compile_seconds = measured_compile_time;
+        result.cost_estimate.confidence = (measured_count == result.total_affected_tus) ? "HIGH" : "MEDIUM";
+        std::ostringstream ss;
+        ss << result.total_affected_tus << " affected translation units, " << measured_count
+           << " with measured -ftime-trace timings (total " << std::fixed << std::setprecision(2) << measured_compile_time << "s).";
+        result.cost_estimate.basis_explanation = ss.str();
+    } else {
+        result.cost_estimate.has_measured_timings = false;
+        result.cost_estimate.confidence = "LOW";
+        result.cost_estimate.basis_explanation = "No measured build timings available.";
+    }
 
     return result;
 }
