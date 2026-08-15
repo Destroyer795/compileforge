@@ -1,14 +1,14 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/core/utils.hpp>
-#include <compileforge/project/scanner.hpp>
-#include <compileforge/parser/compilation_database.hpp>
-#include <compileforge/parser/include_parser.hpp>
-#include <compileforge/graph/dependency_graph.hpp>
-#include <compileforge/graph/cycle_detector.hpp>
-#include <compileforge/metrics/source_metrics.hpp>
-#include <compileforge/analysis/hotspot_scorer.hpp>
-#include <compileforge/recommendations/recommendation_engine.hpp>
-#include <compileforge/reporting/report.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/core/utils.hpp"
+#include "../../include/compileforge/project/scanner.hpp"
+#include "../../include/compileforge/parser/compilation_database.hpp"
+#include "../../include/compileforge/parser/include_parser.hpp"
+#include "../../include/compileforge/graph/dependency_graph.hpp"
+#include "../../include/compileforge/graph/cycle_detector.hpp"
+#include "../../include/compileforge/metrics/source_metrics.hpp"
+#include "../../include/compileforge/analysis/hotspot_scorer.hpp"
+#include "../../include/compileforge/recommendations/recommendation_engine.hpp"
+#include "../../include/compileforge/reporting/report.hpp"
 #include <filesystem>
 
 using namespace compileforge;

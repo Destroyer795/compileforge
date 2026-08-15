@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <compileforge/core/types.hpp>
-#include <compileforge/git/git_analyzer.hpp>
-#include <compileforge/graph/dependency_graph.hpp>
+#include "../core/types.hpp"
+#include "../git/git_analyzer.hpp"
+#include "../graph/dependency_graph.hpp"
 
 namespace compileforge {
 

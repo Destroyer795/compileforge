@@ -1,4 +1,4 @@
-#include <compileforge/graph/cycle_detector.hpp>
+#include "../../include/compileforge/graph/cycle_detector.hpp"
 #include <stack>
 #include <algorithm>
 

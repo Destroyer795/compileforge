@@ -2,9 +2,9 @@
 #define COMPILEFORGE_REPORTING_IMPACT_HTML_REPORTER_HPP
 
 #include <string>
-#include <compileforge/impact/impact_analyzer.hpp>
-#include <compileforge/impact/risk_scorer.hpp>
-#include <compileforge/core/json.hpp>
+#include "../impact/impact_analyzer.hpp"
+#include "../impact/risk_scorer.hpp"
+#include "../core/json.hpp"
 
 namespace compileforge {
 

@@ -3,9 +3,9 @@
 
 #include <string>
 #include <unordered_map>
-#include <compileforge/core/result.hpp>
-#include <compileforge/core/types.hpp>
-#include <compileforge/graph/dependency_graph.hpp>
+#include "../core/result.hpp"
+#include "../core/types.hpp"
+#include "../graph/dependency_graph.hpp"
 
 namespace compileforge {
 

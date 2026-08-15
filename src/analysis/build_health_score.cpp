@@ -1,4 +1,4 @@
-#include <compileforge/analysis/build_health_score.hpp>
+#include "../../include/compileforge/analysis/build_health_score.hpp"
 #include <algorithm>
 #include <sstream>
 

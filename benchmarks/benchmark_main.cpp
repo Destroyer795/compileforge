@@ -2,11 +2,11 @@
 #include <chrono>
 #include <vector>
 #include <string>
-#include <compileforge/core/json.hpp>
-#include <compileforge/parser/include_parser.hpp>
-#include <compileforge/graph/dependency_graph.hpp>
-#include <compileforge/graph/cycle_detector.hpp>
-#include <compileforge/project/scanner.hpp>
+#include "../include/compileforge/core/json.hpp"
+#include "../include/compileforge/parser/include_parser.hpp"
+#include "../include/compileforge/graph/dependency_graph.hpp"
+#include "../include/compileforge/graph/cycle_detector.hpp"
+#include "../include/compileforge/project/scanner.hpp"
 
 using namespace compileforge;
 

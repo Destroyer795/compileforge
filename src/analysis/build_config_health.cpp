@@ -1,4 +1,4 @@
-#include <compileforge/analysis/build_config_health.hpp>
+#include "../../include/compileforge/analysis/build_config_health.hpp"
 #include <unordered_map>
 #include <unordered_set>
 #include <sstream>

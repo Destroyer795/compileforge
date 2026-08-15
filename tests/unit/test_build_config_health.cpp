@@ -1,5 +1,5 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/analysis/build_config_health.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/analysis/build_config_health.hpp"
 
 using namespace compileforge;
 

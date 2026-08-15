@@ -1,6 +1,6 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/metrics/source_metrics.hpp>
-#include <compileforge/build/build_trace.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/metrics/source_metrics.hpp"
+#include "../../include/compileforge/build/build_trace.hpp"
 
 using namespace compileforge;
 

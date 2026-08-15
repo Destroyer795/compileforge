@@ -1,5 +1,5 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/graph/cycle_detector.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/graph/cycle_detector.hpp"
 
 using namespace compileforge;
 

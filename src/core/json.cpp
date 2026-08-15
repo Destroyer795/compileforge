@@ -1,4 +1,4 @@
-#include <compileforge/core/json.hpp>
+#include "../../include/compileforge/core/json.hpp"
 #include <sstream>
 #include <iomanip>
 #include <cctype>

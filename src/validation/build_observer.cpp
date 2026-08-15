@@ -1,5 +1,5 @@
-#include <compileforge/validation/build_observer.hpp>
-#include <compileforge/core/utils.hpp>
+#include "../../include/compileforge/validation/build_observer.hpp"
+#include "../../include/compileforge/core/utils.hpp"
 #include <fstream>
 #include <sstream>
 #include <chrono>

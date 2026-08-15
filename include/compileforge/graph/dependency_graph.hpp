@@ -5,7 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#include <compileforge/core/types.hpp>
+#include "../core/types.hpp"
 
 namespace compileforge {
 

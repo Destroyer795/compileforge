@@ -1,4 +1,4 @@
-#include <compileforge/graph/dependency_graph.hpp>
+#include "../../include/compileforge/graph/dependency_graph.hpp"
 #include <queue>
 #include <algorithm>
 

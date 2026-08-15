@@ -2,8 +2,8 @@
 #define COMPILEFORGE_REPORTING_VALIDATION_REPORTER_HPP
 
 #include <string>
-#include <compileforge/validation/impact_validator.hpp>
-#include <compileforge/core/json.hpp>
+#include "../validation/impact_validator.hpp"
+#include "../core/json.hpp"
 
 namespace compileforge {
 

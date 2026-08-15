@@ -1,5 +1,5 @@
-#include <compileforge/project/scanner.hpp>
-#include <compileforge/core/utils.hpp>
+#include "../../include/compileforge/project/scanner.hpp"
+#include "../../include/compileforge/core/utils.hpp"
 #include <fstream>
 #include <algorithm>
 

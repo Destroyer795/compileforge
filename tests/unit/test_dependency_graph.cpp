@@ -1,5 +1,5 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/graph/dependency_graph.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/graph/dependency_graph.hpp"
 
 using namespace compileforge;
 

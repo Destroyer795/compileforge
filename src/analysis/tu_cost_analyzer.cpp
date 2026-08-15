@@ -1,4 +1,4 @@
-#include <compileforge/analysis/tu_cost_analyzer.hpp>
+#include "../../include/compileforge/analysis/tu_cost_analyzer.hpp"
 #include <algorithm>
 #include <sstream>
 

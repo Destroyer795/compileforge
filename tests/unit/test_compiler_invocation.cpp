@@ -1,5 +1,5 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/parser/compiler_invocation.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/parser/compiler_invocation.hpp"
 
 using namespace compileforge;
 

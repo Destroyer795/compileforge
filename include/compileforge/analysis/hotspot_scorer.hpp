@@ -2,8 +2,8 @@
 #define COMPILEFORGE_ANALYSIS_HOTSPOT_SCORER_HPP
 
 #include <vector>
-#include <compileforge/graph/dependency_graph.hpp>
-#include <compileforge/core/types.hpp>
+#include "../graph/dependency_graph.hpp"
+#include "../core/types.hpp"
 
 namespace compileforge {
 

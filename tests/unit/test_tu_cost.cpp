@@ -1,5 +1,5 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/analysis/tu_cost_analyzer.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/analysis/tu_cost_analyzer.hpp"
 
 using namespace compileforge;
 

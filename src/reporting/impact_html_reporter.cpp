@@ -1,4 +1,4 @@
-#include <compileforge/reporting/impact_html_reporter.hpp>
+#include "../../include/compileforge/reporting/impact_html_reporter.hpp"
 #include <sstream>
 #include <iomanip>
 

@@ -1,6 +1,6 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/impact/impact_analyzer.hpp>
-#include <compileforge/graph/dependency_graph.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/impact/impact_analyzer.hpp"
+#include "../../include/compileforge/graph/dependency_graph.hpp"
 #include <queue>
 #include <unordered_set>
 

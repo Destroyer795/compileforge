@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <variant>
 #include <memory>
-#include <compileforge/core/result.hpp>
+#include "result.hpp"
 
 namespace compileforge {
 

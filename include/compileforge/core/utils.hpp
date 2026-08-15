@@ -5,7 +5,7 @@
 #include <string_view>
 #include <vector>
 #include <filesystem>
-#include <compileforge/core/types.hpp>
+#include "types.hpp"
 
 namespace compileforge::utils {
 

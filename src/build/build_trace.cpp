@@ -1,5 +1,5 @@
-#include <compileforge/build/build_trace.hpp>
-#include <compileforge/core/json.hpp>
+#include "../../include/compileforge/build/build_trace.hpp"
+#include "../../include/compileforge/core/json.hpp"
 #include <fstream>
 
 namespace compileforge {

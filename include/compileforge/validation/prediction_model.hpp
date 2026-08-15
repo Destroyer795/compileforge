@@ -3,10 +3,10 @@
 
 #include <string>
 #include <vector>
-#include <compileforge/core/types.hpp>
-#include <compileforge/impact/impact_analyzer.hpp>
-#include <compileforge/impact/risk_scorer.hpp>
-#include <compileforge/core/json.hpp>
+#include "../core/types.hpp"
+#include "../impact/impact_analyzer.hpp"
+#include "../impact/risk_scorer.hpp"
+#include "../core/json.hpp"
 
 namespace compileforge {
 

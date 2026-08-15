@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <compileforge/core/types.hpp>
+#include "../core/types.hpp"
 
 namespace compileforge {
 

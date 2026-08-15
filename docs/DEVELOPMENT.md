@@ -39,6 +39,12 @@ CompileForge/
 └── README.md                 # Product overview and front door
 ```
 
+### Include Architecture & Dual-Mode Design
+CompileForge uses an intentional dual-mode include structure designed for standard library distribution and modular translation-unit independence:
+- **Public SDK Headers (`include/compileforge/...`)**: Retain the canonical `<compileforge/...>` namespace contract for external consumers while using clean, self-contained intra-library references between headers. Downstream consumers include `<compileforge/core/result.hpp>`, `<compileforge/graph/dependency_graph.hpp>`, etc., using standard `-Iinclude`.
+- **Internal Implementation Units (`src/`, `tests/`, `benchmarks/`)**: Use repository-relative references to the canonical `include/compileforge/` headers so individual implementation files remain independently discoverable and compilable in isolated translation-unit environments.
+- **Authoritative Build**: CMake remains the primary, authoritative build system orchestrating library compilation, executables, compiler optimizations, and test suites.
+
 ---
 
 ## 2. Building from Source

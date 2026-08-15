@@ -1,4 +1,4 @@
-#include <monolith_app/include/core/common.hpp>
+#include "../../include/core/common.hpp"
 
 namespace monolith::storage {
 

@@ -1,7 +1,7 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/graph/dependency_graph.hpp>
-#include <compileforge/graph/cycle_detector.hpp>
-#include <compileforge/analysis/hotspot_scorer.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/graph/dependency_graph.hpp"
+#include "../../include/compileforge/graph/cycle_detector.hpp"
+#include "../../include/compileforge/analysis/hotspot_scorer.hpp"
 
 using namespace compileforge;
 

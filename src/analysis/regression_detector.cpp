@@ -1,4 +1,4 @@
-#include <compileforge/analysis/regression_detector.hpp>
+#include "../../include/compileforge/analysis/regression_detector.hpp"
 #include <sstream>
 
 namespace compileforge {

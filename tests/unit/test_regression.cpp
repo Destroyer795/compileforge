@@ -1,5 +1,5 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/analysis/regression_detector.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/analysis/regression_detector.hpp"
 
 using namespace compileforge;
 

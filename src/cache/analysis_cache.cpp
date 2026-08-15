@@ -1,5 +1,5 @@
-#include <compileforge/cache/analysis_cache.hpp>
-#include <compileforge/core/json.hpp>
+#include "../../include/compileforge/cache/analysis_cache.hpp"
+#include "../../include/compileforge/core/json.hpp"
 #include <fstream>
 
 namespace compileforge {

@@ -3,8 +3,8 @@
 
 #include <string>
 #include <vector>
-#include <compileforge/core/types.hpp>
-#include <compileforge/graph/dependency_graph.hpp>
+#include "../core/types.hpp"
+#include "../graph/dependency_graph.hpp"
 
 namespace compileforge {
 

@@ -1,4 +1,4 @@
-#include <compileforge/core/utils.hpp>
+#include "../../include/compileforge/core/utils.hpp"
 #include <algorithm>
 #include <cctype>
 #include <fstream>

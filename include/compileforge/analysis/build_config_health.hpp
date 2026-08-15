@@ -3,8 +3,8 @@
 
 #include <string>
 #include <vector>
-#include <compileforge/parser/compilation_database.hpp>
-#include <compileforge/parser/compiler_invocation.hpp>
+#include "../parser/compilation_database.hpp"
+#include "../parser/compiler_invocation.hpp"
 
 namespace compileforge {
 

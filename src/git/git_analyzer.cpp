@@ -1,5 +1,5 @@
-#include <compileforge/git/git_analyzer.hpp>
-#include <compileforge/core/utils.hpp>
+#include "../../include/compileforge/git/git_analyzer.hpp"
+#include "../../include/compileforge/core/utils.hpp"
 #include <sstream>
 #include <filesystem>
 

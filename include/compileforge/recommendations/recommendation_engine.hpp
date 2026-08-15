@@ -3,10 +3,10 @@
 
 #include <vector>
 #include <string>
-#include <compileforge/core/types.hpp>
-#include <compileforge/graph/dependency_graph.hpp>
-#include <compileforge/graph/cycle_detector.hpp>
-#include <compileforge/config/config.hpp>
+#include "../core/types.hpp"
+#include "../graph/dependency_graph.hpp"
+#include "../graph/cycle_detector.hpp"
+#include "../config/config.hpp"
 
 namespace compileforge {
 

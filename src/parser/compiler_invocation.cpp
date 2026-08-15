@@ -1,5 +1,5 @@
-#include <compileforge/parser/compiler_invocation.hpp>
-#include <compileforge/core/utils.hpp>
+#include "../../include/compileforge/parser/compiler_invocation.hpp"
+#include "../../include/compileforge/core/utils.hpp"
 #include <algorithm>
 
 namespace compileforge {

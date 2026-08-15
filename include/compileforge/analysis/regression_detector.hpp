@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <compileforge/core/json.hpp>
+#include "../core/json.hpp"
 
 namespace compileforge {
 

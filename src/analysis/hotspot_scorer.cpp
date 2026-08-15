@@ -1,4 +1,4 @@
-#include <compileforge/analysis/hotspot_scorer.hpp>
+#include "../../include/compileforge/analysis/hotspot_scorer.hpp"
 #include <algorithm>
 #include <sstream>
 #include <iomanip>

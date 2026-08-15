@@ -2,8 +2,8 @@
 #define COMPILEFORGE_GRAPH_CYCLE_DETECTOR_HPP
 
 #include <vector>
-#include <compileforge/graph/dependency_graph.hpp>
-#include <compileforge/core/types.hpp>
+#include "dependency_graph.hpp"
+#include "../core/types.hpp"
 
 namespace compileforge {
 

@@ -1,7 +1,7 @@
 #ifndef COMPILEFORGE_VALIDATION_IMPACT_VALIDATOR_HPP
 #define COMPILEFORGE_VALIDATION_IMPACT_VALIDATOR_HPP
 
-#include <compileforge/validation/prediction_model.hpp>
+#include "prediction_model.hpp"
 
 namespace compileforge {
 

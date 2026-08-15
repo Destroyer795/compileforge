@@ -1,4 +1,4 @@
-#include <compileforge/reporting/validation_reporter.hpp>
+#include "../../include/compileforge/reporting/validation_reporter.hpp"
 #include <iostream>
 #include <iomanip>
 #include <sstream>

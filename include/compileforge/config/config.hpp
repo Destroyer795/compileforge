@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <compileforge/core/result.hpp>
+#include "../core/result.hpp"
 
 namespace compileforge {
 

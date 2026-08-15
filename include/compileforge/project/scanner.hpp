@@ -5,8 +5,8 @@
 #include <vector>
 #include <unordered_set>
 #include <filesystem>
-#include <compileforge/core/result.hpp>
-#include <compileforge/core/types.hpp>
+#include "../core/result.hpp"
+#include "../core/types.hpp"
 
 namespace compileforge {
 

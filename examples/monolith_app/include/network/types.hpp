@@ -1,5 +1,5 @@
 #pragma once
-#include <monolith_app/include/core/common.hpp>
+#include "../core/common.hpp"
 #include <string>
 
 namespace monolith::network {

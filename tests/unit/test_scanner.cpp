@@ -1,5 +1,5 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/project/scanner.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/project/scanner.hpp"
 #include <filesystem>
 #include <fstream>
 

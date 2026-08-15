@@ -1,6 +1,6 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/core/json.hpp>
-#include <compileforge/core/utils.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/core/json.hpp"
+#include "../../include/compileforge/core/utils.hpp"
 
 using namespace compileforge;
 

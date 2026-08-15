@@ -1,5 +1,5 @@
-#include <compileforge/reporting/report.hpp>
-#include <compileforge/core/utils.hpp>
+#include "../../include/compileforge/reporting/report.hpp"
+#include "../../include/compileforge/core/utils.hpp"
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>

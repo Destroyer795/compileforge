@@ -1,8 +1,8 @@
 #ifndef COMPILEFORGE_METRICS_SOURCE_METRICS_HPP
 #define COMPILEFORGE_METRICS_SOURCE_METRICS_HPP
 
-#include <compileforge/core/types.hpp>
-#include <compileforge/graph/dependency_graph.hpp>
+#include "../core/types.hpp"
+#include "../graph/dependency_graph.hpp"
 
 namespace compileforge {
 

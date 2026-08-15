@@ -1,5 +1,5 @@
-#include <compileforge/config/config.hpp>
-#include <compileforge/core/json.hpp>
+#include "../../include/compileforge/config/config.hpp"
+#include "../../include/compileforge/core/json.hpp"
 #include <fstream>
 
 namespace compileforge {

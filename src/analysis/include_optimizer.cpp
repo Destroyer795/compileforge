@@ -1,4 +1,4 @@
-#include <compileforge/analysis/include_optimizer.hpp>
+#include "../../include/compileforge/analysis/include_optimizer.hpp"
 #include <sstream>
 
 namespace compileforge {

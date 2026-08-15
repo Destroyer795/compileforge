@@ -3,14 +3,14 @@
 
 #include <vector>
 #include <string>
-#include <compileforge/core/types.hpp>
-#include <compileforge/graph/cycle_detector.hpp>
-#include <compileforge/parser/compiler_invocation.hpp>
-#include <compileforge/analysis/build_config_health.hpp>
-#include <compileforge/analysis/include_optimizer.hpp>
-#include <compileforge/analysis/tu_cost_analyzer.hpp>
-#include <compileforge/analysis/build_health_score.hpp>
-#include <compileforge/core/json.hpp>
+#include "../core/types.hpp"
+#include "../graph/cycle_detector.hpp"
+#include "../parser/compiler_invocation.hpp"
+#include "../analysis/build_config_health.hpp"
+#include "../analysis/include_optimizer.hpp"
+#include "../analysis/tu_cost_analyzer.hpp"
+#include "../analysis/build_health_score.hpp"
+#include "../core/json.hpp"
 
 namespace compileforge {
 

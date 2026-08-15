@@ -1,5 +1,5 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/impact/risk_scorer.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/impact/risk_scorer.hpp"
 
 using namespace compileforge;
 

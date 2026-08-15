@@ -1,5 +1,5 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/recommendations/recommendation_engine.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/recommendations/recommendation_engine.hpp"
 
 using namespace compileforge;
 

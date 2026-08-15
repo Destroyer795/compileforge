@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <compileforge/graph/dependency_graph.hpp>
+#include "../graph/dependency_graph.hpp"
 
 namespace compileforge {
 

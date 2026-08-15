@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <compileforge/core/result.hpp>
-#include <compileforge/core/types.hpp>
-#include <compileforge/core/json.hpp>
+#include "../core/result.hpp"
+#include "../core/types.hpp"
+#include "../core/json.hpp"
 
 namespace compileforge {
 

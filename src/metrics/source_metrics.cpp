@@ -1,4 +1,4 @@
-#include <compileforge/metrics/source_metrics.hpp>
+#include "../../include/compileforge/metrics/source_metrics.hpp"
 
 namespace compileforge {
 

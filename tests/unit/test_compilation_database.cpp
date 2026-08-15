@@ -1,5 +1,5 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/parser/compilation_database.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/parser/compilation_database.hpp"
 
 using namespace compileforge;
 

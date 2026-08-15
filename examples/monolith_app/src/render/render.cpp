@@ -1,5 +1,5 @@
-#include <monolith_app/include/core/common.hpp>
-#include <monolith_app/include/network/types.hpp>
+#include "../../include/core/common.hpp"
+#include "../../include/network/types.hpp"
 #include <vector>
 #include <iostream>
 

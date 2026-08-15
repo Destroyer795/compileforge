@@ -1,6 +1,6 @@
-#include <tests/test_framework.hpp>
-#include <compileforge/validation/impact_validator.hpp>
-#include <compileforge/validation/build_observer.hpp>
+#include "../test_framework.hpp"
+#include "../../include/compileforge/validation/impact_validator.hpp"
+#include "../../include/compileforge/validation/build_observer.hpp"
 
 using namespace compileforge;
 

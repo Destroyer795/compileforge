@@ -1,5 +1,5 @@
-#include <compileforge/parser/include_parser.hpp>
-#include <compileforge/core/utils.hpp>
+#include "../../include/compileforge/parser/include_parser.hpp"
+#include "../../include/compileforge/core/utils.hpp"
 #include <fstream>
 #include <sstream>
 #include <algorithm>

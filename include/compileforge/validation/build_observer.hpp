@@ -3,8 +3,8 @@
 
 #include <string>
 #include <vector>
-#include <compileforge/validation/prediction_model.hpp>
-#include <compileforge/core/result.hpp>
+#include "prediction_model.hpp"
+#include "../core/result.hpp"
 
 namespace compileforge {
 
