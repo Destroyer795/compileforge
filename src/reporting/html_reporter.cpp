@@ -7,12 +7,12 @@ namespace compileforge {
 std::string HtmlReporter::render(const AnalysisReport& report, const std::string& project_name) {
     std::ostringstream html;
 
-    html << R"(<!DOCTYPE html>
+    html << R"HTML(<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CompileForge - )" << project_name << R"(</title>
+  <title>CompileForge - )HTML" << project_name << R"HTML(</title>
   <style>
     :root {
       --bg: #0d1117;
@@ -62,8 +62,18 @@ std::string HtmlReporter::render(const AnalysisReport& report, const std::string
     .metric-val { font-size: 32px; font-weight: 700; color: #fff; margin-top: 8px; }
     .metric-label { font-size: 14px; color: var(--text-muted); font-weight: 500; }
     
-    .section-title { font-size: 20px; font-weight: 600; color: #fff; margin: 32px 0 16px; display: flex; align-items: center; gap: 8px; }
+    .section-title { font-size: 20px; font-weight: 600; color: #fff; margin: 32px 0 16px; display: flex; align-items: center; justify-content: space-between; }
     
+    .search-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      width: 260px;
+    }
+
     table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
     th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
     th { background: #21262d; color: #fff; font-weight: 600; }
@@ -94,32 +104,34 @@ std::string HtmlReporter::render(const AnalysisReport& report, const std::string
       <h1>CompileForge Report</h1>
       <span style="color: var(--text-muted); font-size: 14px;">Build Intelligence & Architecture Analysis</span>
     </div>
-    <div class="badge">)" << project_name << R"(</div>
+    <div class="badge">)HTML" << project_name << R"HTML(</div>
   </header>
 
   <main>
     <div class="grid">
       <div class="card">
         <div class="metric-label">Total Files</div>
-        <div class="metric-val">)" << report.summary.total_files << R"(</div>
+        <div class="metric-val">)HTML" << report.summary.total_files << R"HTML(</div>
       </div>
       <div class="card">
         <div class="metric-label">Headers / TUs</div>
-        <div class="metric-val">)" << report.summary.total_headers << " / " << report.summary.total_translation_units << R"(</div>
+        <div class="metric-val">)HTML" << report.summary.total_headers << " / " << report.summary.total_translation_units << R"HTML(</div>
       </div>
       <div class="card">
         <div class="metric-label">Total SLOC</div>
-        <div class="metric-val">)" << report.summary.total_sloc << R"(</div>
+        <div class="metric-val">)HTML" << report.summary.total_sloc << R"HTML(</div>
       </div>
       <div class="card">
         <div class="metric-label">Circular Dependencies</div>
-        <div class="metric-val" style="color: )" << (report.summary.circular_dependency_count > 0 ? "var(--danger)" : "var(--success)") << R"(;">)"
-        << report.summary.circular_dependency_count << R"(</div>
+        <div class="metric-val" style="color: )HTML" << (report.summary.circular_dependency_count > 0 ? "var(--danger)" : "var(--success)") << R"HTML(;">)HTML"
+        << report.summary.circular_dependency_count << R"HTML(</div>
       </div>
     </div>
 
-    <div class="section-title">Actionable Recommendations</div>
-)";
+    <div class="section-title">
+      <span>Actionable Recommendations</span>
+    </div>
+)HTML";
 
     if (report.recommendations.empty()) {
         html << "<div class=\"card\" style=\"color: var(--success);\">No critical recommendations. Architecture is clean!</div>";
@@ -134,9 +146,12 @@ std::string HtmlReporter::render(const AnalysisReport& report, const std::string
         }
     }
 
-    html << R"(
-    <div class="section-title">Build & Dependency Hotspots</div>
-    <table>
+    html << R"HTML(
+    <div class="section-title">
+      <span>Build & Dependency Hotspots</span>
+      <input type="text" class="search-input" id="search" placeholder="Filter files..." onkeyup="filterTable()">
+    </div>
+    <table id="hotspotsTable">
       <thead>
         <tr>
           <th>File Path</th>
@@ -145,12 +160,13 @@ std::string HtmlReporter::render(const AnalysisReport& report, const std::string
           <th>Transitive Dependents</th>
           <th>Est. Compile Time</th>
           <th>Hotspot Score</th>
+          <th>Score Breakdown</th>
         </tr>
       </thead>
       <tbody>
-)";
+)HTML";
 
-    for (size_t i = 0; i < std::min<size_t>(15, report.top_hotspots.size()); ++i) {
+    for (size_t i = 0; i < report.top_hotspots.size(); ++i) {
         const auto& node = report.top_hotspots[i];
         html << "        <tr>\n";
         html << "          <td style=\"font-family: monospace; font-weight: 500;\">" << node.relative_path << "</td>\n";
@@ -159,16 +175,38 @@ std::string HtmlReporter::render(const AnalysisReport& report, const std::string
         html << "          <td>" << node.fan_stats.fan_in_transitive << "</td>\n";
         html << "          <td>" << std::fixed << std::setprecision(2) << node.build_time.compilation_seconds << "s</td>\n";
         html << "          <td><span class=\"badge\">" << std::setprecision(1) << node.hotspot.total_score << "</span></td>\n";
+        html << "          <td style=\"font-size: 12px; color: var(--text-muted);\">" << node.hotspot.score_breakdown << "</td>\n";
         html << "        </tr>\n";
     }
 
-    html << R"(
+    html << R"HTML(
       </tbody>
     </table>
   </main>
+
+  <script>
+    function filterTable() {
+      var input = document.getElementById('search');
+      var filter = input.value.toLowerCase();
+      var table = document.getElementById('hotspotsTable');
+      var tr = table.getElementsByTagName('tr');
+
+      for (var i = 1; i < tr.length; i++) {
+        var td = tr[i].getElementsByTagName('td')[0];
+        if (td) {
+          var textValue = td.textContent || td.innerText;
+          if (textValue.toLowerCase().indexOf(filter) > -1) {
+            tr[i].style.display = '';
+          } else {
+            tr[i].style.display = 'none';
+          }
+        }
+      }
+    }
+  </script>
 </body>
 </html>
-)";
+)HTML";
 
     return html.str();
 }

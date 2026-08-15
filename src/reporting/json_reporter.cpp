@@ -5,6 +5,8 @@ namespace compileforge {
 JsonValue JsonReporter::to_json(const AnalysisReport& report) {
     JsonValue::ObjectType root;
 
+    root["schema_version"] = "1.0";
+
     // Summary
     JsonValue::ObjectType sum_obj;
     sum_obj["total_files"] = report.summary.total_files;
@@ -30,6 +32,7 @@ JsonValue JsonReporter::to_json(const AnalysisReport& report) {
         f_obj["fan_in_transitive"] = file.fan_stats.fan_in_transitive;
         f_obj["fan_out_transitive"] = file.fan_stats.fan_out_transitive;
         f_obj["hotspot_score"] = file.hotspot.total_score;
+        f_obj["score_breakdown"] = file.hotspot.score_breakdown;
         f_obj["estimated_compile_seconds"] = file.build_time.compilation_seconds;
         f_obj["commits"] = file.git_data.commit_count;
         files_arr.push_back(f_obj);
