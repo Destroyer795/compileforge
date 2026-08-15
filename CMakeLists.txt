@@ -47,6 +47,8 @@ set(COMPILEFORGE_HEADERS
     include/compileforge/analysis/include_optimizer.hpp
     include/compileforge/analysis/tu_cost_analyzer.hpp
     include/compileforge/analysis/build_health_score.hpp
+    include/compileforge/impact/impact_analyzer.hpp
+    include/compileforge/impact/risk_scorer.hpp
     include/compileforge/recommendations/recommendation_engine.hpp
     include/compileforge/config/config.hpp
     include/compileforge/cache/analysis_cache.hpp
@@ -54,6 +56,7 @@ set(COMPILEFORGE_HEADERS
     include/compileforge/reporting/terminal_reporter.hpp
     include/compileforge/reporting/json_reporter.hpp
     include/compileforge/reporting/html_reporter.hpp
+    include/compileforge/reporting/impact_html_reporter.hpp
 )
 
 set(COMPILEFORGE_SOURCES
@@ -74,12 +77,15 @@ set(COMPILEFORGE_SOURCES
     src/analysis/include_optimizer.cpp
     src/analysis/tu_cost_analyzer.cpp
     src/analysis/build_health_score.cpp
+    src/impact/impact_analyzer.cpp
+    src/impact/risk_scorer.cpp
     src/recommendations/recommendation_engine.cpp
     src/config/config.cpp
     src/cache/analysis_cache.cpp
     src/reporting/terminal_reporter.cpp
     src/reporting/json_reporter.cpp
     src/reporting/html_reporter.cpp
+    src/reporting/impact_html_reporter.cpp
 )
 
 add_library(compileforge_lib STATIC ${COMPILEFORGE_HEADERS} ${COMPILEFORGE_SOURCES})
@@ -114,6 +120,9 @@ if(COMPILEFORGE_BUILD_TESTS)
         tests/unit/test_build_config_health.cpp
         tests/unit/test_tu_cost.cpp
         tests/unit/test_build_health_score.cpp
+        tests/unit/test_impact_analyzer.cpp
+        tests/unit/test_risk_scorer.cpp
+        tests/unit/test_git_diff.cpp
         tests/unit/test_recommendations.cpp
         tests/unit/test_regression.cpp
         tests/unit/test_properties.cpp

@@ -14,39 +14,204 @@
 #include <compileforge/analysis/include_optimizer.hpp>
 #include <compileforge/analysis/tu_cost_analyzer.hpp>
 #include <compileforge/analysis/build_health_score.hpp>
-#include <compileforge/config/config.hpp>
+#include <compileforge/impact/impact_analyzer.hpp>
+#include <compileforge/impact/risk_scorer.hpp>
 #include <compileforge/recommendations/recommendation_engine.hpp>
 #include <compileforge/config/config.hpp>
 #include <compileforge/cache/analysis_cache.hpp>
 #include <compileforge/reporting/report.hpp>
+#include <compileforge/reporting/impact_html_reporter.hpp>
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 using namespace compileforge;
 
 void print_usage() {
     std::cout << R"(
-CompileForge - C++ Build Intelligence & Optimization Toolkit
+CompileForge - C++ Build Intelligence & Change-Impact Analysis Toolkit
 
 USAGE:
   compileforge <subcommand> [options]
 
 SUBCOMMANDS:
-  analyze <project_path>    Analyze compilation database and include graph
-  diff <old.json> <new.json> Compare two analysis reports for regressions
+  impact [rev_range]        Analyze change-impact surface & risk of Git changes
+  analyze [project_path]    Analyze compilation database and include graph
+  diff <old.json> <new.json> Compare two general analysis reports
+  diff-impact <old> <new>    Compare two impact analysis reports
   init [project_path]       Initialize a .compileforge.json configuration file
   --help, -h                Show this help message
   --version, -v             Show version information
 
-ANALYZE OPTIONS:
-  --compilation-database, -db <path> Path to compile_commands.json
+IMPACT OPTIONS:
+  [rev_range]                        Git revision range (default: HEAD~1..HEAD)
+  --file <path>                      Analyze impact of specific modified file
+  --commit <hash>                    Analyze impact of specific Git commit
+  --fail-on-risk <threshold>         Exit non-zero if risk score >= threshold
   --format <terminal|json|html>      Output format (default: terminal)
-  --output, -o <file>                Save report to file
-  --fail-on-cycle                    Exit with non-zero code if cycles detected
-  --fail-on-hotspot                  Exit with non-zero code if hotspots score > 80
-  --quiet, -q                        Suppress non-essential terminal output
-  --no-color                         Disable ANSI terminal colors
+  --output, -o <file>                Save impact report to file
+  --quiet, -q                        Suppress non-essential output
 )";
+}
+
+int handle_impact(int argc, char* argv[]) {
+    std::string project_path = ".";
+    std::string rev_range = "HEAD~1..HEAD";
+    std::string single_file;
+    std::string format = "terminal";
+    std::string output_file;
+    int fail_on_risk = -1;
+    bool quiet = false;
+
+    for (int i = 2; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--file") {
+            if (i + 1 < argc) single_file = argv[++i];
+        } else if (arg == "--commit") {
+            if (i + 1 < argc) {
+                std::string commit_hash = argv[++i];
+                rev_range = commit_hash + "~1.." + commit_hash;
+            }
+        } else if (arg == "--fail-on-risk") {
+            if (i + 1 < argc) fail_on_risk = std::stoi(argv[++i]);
+        } else if (arg == "--format") {
+            if (i + 1 < argc) format = argv[++i];
+        } else if (arg == "--output" || arg == "-o") {
+            if (i + 1 < argc) output_file = argv[++i];
+        } else if (arg == "--quiet" || arg == "-q") {
+            quiet = true;
+        } else if (arg[0] != '-') {
+            if (std::filesystem::is_directory(arg)) {
+                project_path = arg;
+            } else {
+                rev_range = arg;
+            }
+        }
+    }
+
+    project_path = utils::normalize_path(project_path);
+    Config config = Config::default_config();
+
+    ScanOptions scan_opts;
+    scan_opts.root_path = project_path;
+    ProjectScanner scanner(scan_opts);
+    auto scan_res = scanner.scan();
+    if (scan_res.is_error()) {
+        std::cerr << "Error scanning project: " << scan_res.error().message << "\n";
+        return 1;
+    }
+
+    auto files = scan_res.value();
+    DependencyGraph graph;
+    std::vector<std::string> search_dirs;
+
+    std::string comp_db_path = (std::filesystem::path(project_path) / "compile_commands.json").string();
+    if (std::filesystem::exists(comp_db_path)) {
+        auto db_res = CompilationDatabase::load_file(comp_db_path);
+        if (db_res.is_ok()) {
+            for (const auto& entry : db_res.value().entries()) {
+                for (const auto& inc : entry.include_dirs) search_dirs.push_back(inc);
+            }
+        }
+    }
+
+    for (auto& file : files) {
+        graph.add_node(file);
+        auto parse_res = IncludeParser::parse_file(file.canonical_path);
+        if (parse_res.is_ok()) {
+            file.metrics = parse_res.value().metrics;
+            file.includes = parse_res.value().includes;
+            for (const auto& inc : file.includes) {
+                std::string resolved = IncludeParser::resolve_include_path(inc, file.canonical_path, search_dirs, project_path);
+                if (!resolved.empty()) {
+                    graph.add_edge(file.relative_path, utils::to_relative_path(resolved, project_path));
+                }
+            }
+        }
+    }
+
+    HotspotScorer::compute_hotspots(graph);
+    auto cycles = CycleDetector::detect_cycles(graph);
+
+    std::vector<ChangedFileEntry> changed_files;
+    if (!single_file.empty()) {
+        ChangedFileEntry e;
+        e.relative_path = single_file;
+        e.change_kind = FileChangeKind::Modified;
+        changed_files.push_back(e);
+    } else {
+        changed_files = GitAnalyzer::get_changed_files(project_path, rev_range);
+    }
+
+    auto impact_res = ImpactAnalyzer::analyze_impact(graph, changed_files);
+    auto risk_res = RiskScorer::compute_risk(impact_res, graph, cycles.size());
+
+    ImpactReport report{impact_res, risk_res};
+
+    if (format == "json") {
+        std::string json_str = ImpactJsonReporter::render(report);
+        if (!output_file.empty()) {
+            std::ofstream ofs(output_file);
+            ofs << json_str;
+            if (!quiet) std::cout << "Impact JSON report saved to: " << output_file << "\n";
+        } else {
+            std::cout << json_str << "\n";
+        }
+    } else if (format == "html") {
+        std::string html_str = ImpactHtmlReporter::render(report, project_path);
+        if (!output_file.empty()) {
+            std::ofstream ofs(output_file);
+            ofs << html_str;
+            if (!quiet) std::cout << "Impact HTML report saved to: " << output_file << "\n";
+        } else {
+            std::cout << html_str << "\n";
+        }
+    } else {
+        if (!quiet) {
+            std::cout << "\n==========================================================\n";
+            std::cout << "             COMPILEFORGE CHANGE-IMPACT ANALYSIS          \n";
+            std::cout << "==========================================================\n\n";
+
+            std::cout << "CHANGE RISK SCORE: " << risk_res.score_breakdown.total_risk_score << " / 100 ("
+                      << impact_res.impact_classification << " IMPACT)\n\n";
+
+            std::cout << "CHANGE SUMMARY\n";
+            std::cout << "  Changed Files:     " << changed_files.size() << "\n";
+            std::cout << "  Potentially Affected TUs: " << impact_res.total_affected_tus << "\n";
+            std::cout << "  Potentially Affected Headers: " << impact_res.total_affected_headers << "\n";
+            std::cout << "  Estimated Rebuild Surface: " << std::fixed << std::setprecision(1) << impact_res.percentage_tus_affected << "%\n";
+            std::cout << "  Max Impact Depth:  " << impact_res.max_impact_depth << " levels\n\n";
+
+            std::cout << "WHY THIS CHANGE IS RISKY\n";
+            if (risk_res.why_risky_reasons.empty()) {
+                std::cout << "  - Low impact modification.\n";
+            } else {
+                for (const auto& reason : risk_res.why_risky_reasons) {
+                    std::cout << "  - " << reason << "\n";
+                }
+            }
+            std::cout << "\n";
+
+            std::cout << "REVIEW HOTSPOTS (HIGH INSPECTION PRIORITY)\n";
+            if (risk_res.review_hotspots.empty()) {
+                std::cout << "  No critical review hotspots.\n";
+            } else {
+                for (const auto& rh : risk_res.review_hotspots) {
+                    std::cout << "  " << std::left << std::setw(32) << rh.relative_path
+                              << " [" << std::setw(6) << rh.risk_level << "] - " << rh.why_reason << "\n";
+                }
+            }
+            std::cout << "\n";
+        }
+    }
+
+    if (fail_on_risk >= 0 && risk_res.score_breakdown.total_risk_score >= fail_on_risk) {
+        std::cerr << "CI Failure: Change Risk Score " << risk_res.score_breakdown.total_risk_score
+                  << " exceeds policy threshold " << fail_on_risk << "\n";
+        return 1;
+    }
+
+    return 0;
 }
 
 int handle_analyze(int argc, char* argv[]) {
@@ -72,8 +237,6 @@ int handle_analyze(int argc, char* argv[]) {
             fail_on_hotspot = true;
         } else if (arg == "--quiet" || arg == "-q") {
             quiet = true;
-        } else if (arg == "--no-color") {
-            // Handled via std::getenv or isatty
         } else if (arg[0] != '-') {
             project_path = arg;
         }
@@ -109,21 +272,17 @@ int handle_analyze(int argc, char* argv[]) {
         if (db_res.is_ok()) {
             comp_db = db_res.value();
             for (const auto& entry : comp_db.entries()) {
-                for (const auto& inc : entry.include_dirs) {
-                    search_dirs.push_back(inc);
-                }
+                for (const auto& inc : entry.include_dirs) search_dirs.push_back(inc);
             }
         }
     }
 
-    // Build dependency graph
     for (auto& file : files) {
         graph.add_node(file);
         auto parse_res = IncludeParser::parse_file(file.canonical_path);
         if (parse_res.is_ok()) {
             file.metrics = parse_res.value().metrics;
             file.includes = parse_res.value().includes;
-
             for (const auto& inc : file.includes) {
                 std::string resolved = IncludeParser::resolve_include_path(inc, file.canonical_path, search_dirs, project_path);
                 if (!resolved.empty()) {
@@ -235,6 +394,37 @@ int handle_diff(int argc, char* argv[]) {
     return 0;
 }
 
+int handle_diff_impact(int argc, char* argv[]) {
+    if (argc < 4) {
+        std::cerr << "Usage: compileforge diff-impact <baseline_impact.json> <current_impact.json>\n";
+        return 1;
+    }
+    std::string base_path = argv[2];
+    std::string curr_path = argv[3];
+
+    std::ifstream f1(base_path), f2(curr_path);
+    if (!f1 || !f2) {
+        std::cerr << "Error opening impact report files.\n";
+        return 1;
+    }
+    std::string c1((std::istreambuf_iterator<char>(f1)), std::istreambuf_iterator<char>());
+    std::string c2((std::istreambuf_iterator<char>(f2)), std::istreambuf_iterator<char>());
+
+    auto j1 = JsonValue::parse(c1);
+    auto j2 = JsonValue::parse(c2);
+    if (j1.is_error() || j2.is_error()) {
+        std::cerr << "Error parsing impact report JSON.\n";
+        return 1;
+    }
+
+    int risk1 = j1.value()["risk"]["total_risk_score"].as_int();
+    int risk2 = j2.value()["risk"]["total_risk_score"].as_int();
+    int delta = risk2 - risk1;
+
+    std::cout << "CHANGE RISK DELTA: " << (delta >= 0 ? "+" : "") << delta << " (Base: " << risk1 << " -> Current: " << risk2 << ")\n";
+    return 0;
+}
+
 int handle_init(int argc, char* argv[]) {
     std::string proj = ".";
     if (argc >= 3) proj = argv[2];
@@ -263,12 +453,16 @@ int main(int argc, char* argv[]) {
         print_usage();
         return 0;
     } else if (command == "--version" || command == "-v") {
-        std::cout << "CompileForge v1.0.0 (C++20 Build Intelligence Toolkit)\n";
+        std::cout << "CompileForge v1.0.0 (C++20 Build Intelligence & Change-Impact Toolkit)\n";
         return 0;
+    } else if (command == "impact") {
+        return handle_impact(argc, argv);
     } else if (command == "analyze") {
         return handle_analyze(argc, argv);
     } else if (command == "diff") {
         return handle_diff(argc, argv);
+    } else if (command == "diff-impact") {
+        return handle_diff_impact(argc, argv);
     } else if (command == "init") {
         return handle_init(argc, argv);
     } else {
