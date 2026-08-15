@@ -29,6 +29,14 @@ JsonValue ImpactJsonReporter::to_json(const ImpactReport& report) {
     surf_obj["percentage_loc_affected"] = report.impact.percentage_loc_affected;
     surf_obj["max_impact_depth"] = report.impact.max_impact_depth;
     surf_obj["impact_classification"] = report.impact.impact_classification;
+
+    JsonValue::ArrayType aff_tus;
+    for (const auto& aff : report.impact.affected_nodes) {
+        if (aff.is_translation_unit) {
+            aff_tus.push_back(aff.relative_path);
+        }
+    }
+    surf_obj["affected_translation_units"] = aff_tus;
     root["rebuild_surface"] = surf_obj;
 
     // Changed files

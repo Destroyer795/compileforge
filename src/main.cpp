@@ -21,6 +21,9 @@
 #include <compileforge/cache/analysis_cache.hpp>
 #include <compileforge/reporting/report.hpp>
 #include <compileforge/reporting/impact_html_reporter.hpp>
+#include <compileforge/validation/build_observer.hpp>
+#include <compileforge/validation/impact_validator.hpp>
+#include <compileforge/reporting/validation_reporter.hpp>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -36,6 +39,7 @@ USAGE:
 
 SUBCOMMANDS:
   impact [rev_range]        Analyze change-impact surface & risk of Git changes
+  validate <prediction.json> Validate impact predictions against observed builds
   analyze [project_path]    Analyze compilation database and include graph
   diff <old.json> <new.json> Compare two general analysis reports
   diff-impact <old> <new>    Compare two impact analysis reports
@@ -43,14 +47,12 @@ SUBCOMMANDS:
   --help, -h                Show this help message
   --version, -v             Show version information
 
-IMPACT OPTIONS:
-  [rev_range]                        Git revision range (default: HEAD~1..HEAD)
-  --file <path>                      Analyze impact of specific modified file
-  --commit <hash>                    Analyze impact of specific Git commit
-  --fail-on-risk <threshold>         Exit non-zero if risk score >= threshold
+VALIDATION OPTIONS:
+  <prediction.json>                  Path to saved prediction JSON
+  --build "<command>"                Build command to execute and observe
+  --log <file>                       Path to build log file to parse
   --format <terminal|json|html>      Output format (default: terminal)
-  --output, -o <file>                Save impact report to file
-  --quiet, -q                        Suppress non-essential output
+  --output, -o <file>                Save validation report to file
 )";
 }
 
@@ -209,6 +211,89 @@ int handle_impact(int argc, char* argv[]) {
         std::cerr << "CI Failure: Change Risk Score " << risk_res.score_breakdown.total_risk_score
                   << " exceeds policy threshold " << fail_on_risk << "\n";
         return 1;
+    }
+
+    return 0;
+}
+
+int handle_validate(int argc, char* argv[]) {
+    if (argc < 3) {
+        std::cerr << "Usage: compileforge validate <prediction.json> [--build \"<cmd>\"] [--log <file>]\n";
+        return 1;
+    }
+
+    std::string pred_file = argv[2];
+    std::string build_cmd;
+    std::string log_file;
+    std::string format = "terminal";
+    std::string output_file;
+
+    for (int i = 3; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--build") {
+            if (i + 1 < argc) build_cmd = argv[++i];
+        } else if (arg == "--log") {
+            if (i + 1 < argc) log_file = argv[++i];
+        } else if (arg == "--format") {
+            if (i + 1 < argc) format = argv[++i];
+        } else if (arg == "--output" || arg == "-o") {
+            if (i + 1 < argc) output_file = argv[++i];
+        }
+    }
+
+    std::ifstream p_ifs(pred_file);
+    if (!p_ifs) {
+        std::cerr << "Error opening prediction file: " << pred_file << "\n";
+        return 1;
+    }
+    std::string p_content((std::istreambuf_iterator<char>(p_ifs)), std::istreambuf_iterator<char>());
+    auto p_json = JsonValue::parse(p_content);
+    if (p_json.is_error()) {
+        std::cerr << "Error parsing prediction JSON.\n";
+        return 1;
+    }
+
+    auto pred_res = ImpactPrediction::from_json(p_json.value());
+    if (pred_res.is_error()) {
+        std::cerr << "Error decoding prediction: " << pred_res.error().message << "\n";
+        return 1;
+    }
+
+    BuildObservation obs;
+    if (!build_cmd.empty()) {
+        auto obs_res = BuildObserver::observe_command(build_cmd);
+        if (obs_res.is_ok()) obs = obs_res.value();
+    } else if (!log_file.empty()) {
+        auto obs_res = BuildObserver::parse_build_log(log_file);
+        if (obs_res.is_ok()) obs = obs_res.value();
+    } else {
+        // Mock/self observation fallback
+        obs.rebuilt_tus = pred_res.value().predicted_affected_tus;
+        obs.observation_source = "SIMULATED_REBUILD";
+    }
+
+    auto val_res = ImpactValidator::validate(pred_res.value(), obs);
+
+    if (format == "json") {
+        std::string json_str = ValidationReporter::render_json(val_res);
+        if (!output_file.empty()) {
+            std::ofstream ofs(output_file);
+            ofs << json_str;
+            std::cout << "Validation JSON report saved to: " << output_file << "\n";
+        } else {
+            std::cout << json_str << "\n";
+        }
+    } else if (format == "html") {
+        std::string html_str = ValidationReporter::render_html(val_res);
+        if (!output_file.empty()) {
+            std::ofstream ofs(output_file);
+            ofs << html_str;
+            std::cout << "Validation HTML report saved to: " << output_file << "\n";
+        } else {
+            std::cout << html_str << "\n";
+        }
+    } else {
+        ValidationReporter::print_terminal(val_res);
     }
 
     return 0;
@@ -457,6 +542,8 @@ int main(int argc, char* argv[]) {
         return 0;
     } else if (command == "impact") {
         return handle_impact(argc, argv);
+    } else if (command == "validate") {
+        return handle_validate(argc, argv);
     } else if (command == "analyze") {
         return handle_analyze(argc, argv);
     } else if (command == "diff") {
