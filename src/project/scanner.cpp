@@ -42,7 +42,8 @@ bool ProjectScanner::should_ignore(
     }
 
     for (const auto& custom_ign : custom_ignores) {
-        if (!custom_ign.empty() && utils::starts_with(path_str, custom_ign)) {
+        if (custom_ign.empty()) continue;
+        if (utils::glob_match(custom_ign, path_str) || utils::starts_with(path_str, custom_ign)) {
             return true;
         }
     }
@@ -53,18 +54,18 @@ bool ProjectScanner::should_ignore(
 Result<std::vector<FileNode>> ProjectScanner::scan() {
     std::filesystem::path root(options_.root_path);
     if (!std::filesystem::exists(root)) {
-        return Error{
+        return Error(
             ErrorCode::FileNotFound,
             "Target directory does not exist: " + options_.root_path,
             "ProjectScanner::scan"
-        };
+        );
     }
     if (!std::filesystem::is_directory(root)) {
-        return Error{
+        return Error(
             ErrorCode::InvalidPath,
             "Target path is not a directory: " + options_.root_path,
             "ProjectScanner::scan"
-        };
+        );
     }
 
     // Check for .compileforgeignore
@@ -90,9 +91,6 @@ Result<std::vector<FileNode>> ProjectScanner::scan() {
         if (ec) continue;
 
         if (should_ignore(rel_path, options_.ignore_patterns, options_.ignore_hidden)) {
-            if (entry.is_directory()) {
-                // Skips iterating into directory sub-tree if using appropriate standard options
-            }
             continue;
         }
 
@@ -113,6 +111,11 @@ Result<std::vector<FileNode>> ProjectScanner::scan() {
         }
         nodes.push_back(std::move(node));
     }
+
+    // Deterministic sorting by relative path
+    std::sort(nodes.begin(), nodes.end(), [](const FileNode& a, const FileNode& b) {
+        return a.relative_path < b.relative_path;
+    });
 
     return nodes;
 }

@@ -62,9 +62,12 @@ CompileCommandEntry CompilationDatabase::parse_command_entry(
     entry.arguments = args;
 
     for (size_t i = 0; i < args.size(); ++i) {
-        const std::string& arg = args[i];
+        std::string arg = utils::trim(args[i]);
+        if (arg.size() >= 2 && ((arg.front() == '"' && arg.back() == '"') || (arg.front() == '\'' && arg.back() == '\''))) {
+            arg = arg.substr(1, arg.size() - 2);
+        }
 
-        // Include directory flags: -I, /I, -isystem, /imsvc
+        // Include directory flags: -I, /I, -isystem, -iquote, /imsvc
         if (utils::starts_with(arg, "-I") || utils::starts_with(arg, "/I")) {
             std::string path_part = arg.substr(2);
             if (path_part.empty() && i + 1 < args.size()) {
@@ -77,7 +80,7 @@ CompileCommandEntry CompilationDatabase::parse_command_entry(
                 }
                 entry.include_dirs.push_back(utils::normalize_path(inc_p.string()));
             }
-        } else if (arg == "-isystem" || arg == "/imsvc") {
+        } else if (arg == "-isystem" || arg == "-iquote" || arg == "/imsvc") {
             if (i + 1 < args.size()) {
                 std::string path_part = args[++i];
                 std::filesystem::path inc_p(path_part);
@@ -97,6 +100,16 @@ CompileCommandEntry CompilationDatabase::parse_command_entry(
                 entry.defines.push_back(def_part);
             }
         }
+        // Undefine flags: -U, /U
+        else if (utils::starts_with(arg, "-U") || utils::starts_with(arg, "/U")) {
+            std::string undef_part = arg.substr(2);
+            if (undef_part.empty() && i + 1 < args.size()) {
+                undef_part = args[++i];
+            }
+            if (!undef_part.empty()) {
+                entry.defines.push_back("!UNDEF_" + undef_part);
+            }
+        }
         // Forced include flags: -include, /FI
         else if (arg == "-include" || arg == "/FI") {
             if (i + 1 < args.size()) {
@@ -111,27 +124,31 @@ CompileCommandEntry CompilationDatabase::parse_command_entry(
 Result<CompilationDatabase> CompilationDatabase::load_file(const std::string& json_filepath) {
     std::ifstream ifs(json_filepath);
     if (!ifs) {
-        return Error{
+        return Error(
             ErrorCode::FileNotFound,
-            "Could not open compilation database file: " + json_filepath,
+            "Could not find compile_commands.json at: " + json_filepath + "\nTip: Run CMake with CMAKE_EXPORT_COMPILE_COMMANDS=ON or pass --compilation-database <path>",
             "CompilationDatabase::load_file"
-        };
+        );
     }
     std::string content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
     auto parse_res = JsonValue::parse(content);
     if (parse_res.is_error()) {
-        return parse_res.error();
+        return Error(
+            ErrorCode::InvalidCompilationDatabase,
+            "Failed to parse compile_commands.json: " + parse_res.error().message,
+            "CompilationDatabase::load_file"
+        );
     }
     return load_json(parse_res.value());
 }
 
 Result<CompilationDatabase> CompilationDatabase::load_json(const JsonValue& json_root) {
     if (!json_root.is_array()) {
-        return Error{
+        return Error(
             ErrorCode::InvalidCompilationDatabase,
             "Compilation database JSON root must be an array of objects",
             "CompilationDatabase::load_json"
-        };
+        );
     }
 
     CompilationDatabase db;
@@ -166,6 +183,12 @@ const CompileCommandEntry* CompilationDatabase::find_entry(const std::string& fi
     auto it = file_to_entry_index_.find(norm);
     if (it != file_to_entry_index_.end()) {
         return &entries_[it->second];
+    }
+    // Case-insensitive fallback lookup for Windows paths
+    for (const auto& entry : entries_) {
+        if (utils::path_equals(entry.file, filepath)) {
+            return &entry;
+        }
     }
     return nullptr;
 }

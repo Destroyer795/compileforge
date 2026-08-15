@@ -4,31 +4,35 @@
 #include <sstream>
 #include <algorithm>
 #include <cctype>
+#include <unordered_set>
 
 namespace compileforge {
 
 Result<ParseFileResult> IncludeParser::parse_file(const std::string& filepath) {
     std::ifstream ifs(filepath, std::ios::binary);
     if (!ifs) {
-        return Error{
+        return Error(
             ErrorCode::FileNotFound,
             "Could not open source file: " + filepath,
             "IncludeParser::parse_file"
-        };
+        );
     }
     std::string content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
     return parse_content(content, filepath);
 }
 
 ParseFileResult IncludeParser::parse_content(const std::string& content, const std::string& filepath) {
-    (void)filepath;
     ParseFileResult result;
     std::istringstream iss(content);
     std::string line;
 
     bool in_block_comment = false;
+    int if_zero_depth = 0;
     size_t line_num = 0;
     std::string last_ifndef_guard;
+    std::unordered_set<std::string> seen_includes;
+
+    std::string current_file_basename = utils::to_lower(std::filesystem::path(filepath).filename().string());
 
     while (std::getline(iss, line)) {
         ++line_num;
@@ -76,6 +80,20 @@ ParseFileResult IncludeParser::parse_content(const std::string& content, const s
         if (clean_line.empty()) {
             if (!in_block_comment) result.metrics.blank_lines++;
             continue;
+        }
+
+        // Handle #if 0 ... #endif skipping
+        if (utils::starts_with(clean_line, "#if 0") || utils::starts_with(clean_line, "#if  0")) {
+            if_zero_depth++;
+            continue;
+        }
+        if (if_zero_depth > 0) {
+            if (utils::starts_with(clean_line, "#if")) {
+                if_zero_depth++;
+            } else if (utils::starts_with(clean_line, "#endif")) {
+                if_zero_depth--;
+            }
+            continue; // Skip lines inside #if 0 block
         }
 
         result.metrics.sloc++;
@@ -127,6 +145,17 @@ ParseFileResult IncludeParser::parse_content(const std::string& content, const s
                     dir.raw_path = inc_part.substr(1, inc_part.size() - 2);
                     dir.kind = (first == '"') ? IncludeKind::User : IncludeKind::System;
                     dir.line_number = line_num;
+
+                    std::string inc_basename = utils::to_lower(std::filesystem::path(dir.raw_path).filename().string());
+                    if (!current_file_basename.empty() && current_file_basename == inc_basename) {
+                        dir.is_self_include = true;
+                    }
+                    if (seen_includes.find(dir.raw_path) != seen_includes.end()) {
+                        dir.is_duplicate = true;
+                    } else {
+                        seen_includes.insert(dir.raw_path);
+                    }
+
                     result.includes.push_back(std::move(dir));
                 }
             }
@@ -170,7 +199,7 @@ std::string IncludeParser::resolve_include_path(
         }
     }
 
-    return ""; // Unresolved / system header
+    return "";
 }
 
 } // namespace compileforge
