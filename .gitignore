@@ -1,0 +1,19 @@
+# Build directories
+build/
+bin/
+obj/
+out/
+cmake-build-*/
+
+# Reports and temporary cache
+report.html
+report.json
+test_report.json
+.compileforge.cache
+
+# IDE and OS
+.vs/
+.vscode/
+.idea/
+.DS_Store
+*.swp
